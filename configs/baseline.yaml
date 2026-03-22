@@ -1,0 +1,39 @@
+# Model configuration
+model:
+  name: "Helsinki-NLP/opus-mt-es-ROMANCE"
+  max_source_length: 128
+  max_target_length: 128
+
+# LoRA — reduces overfitting on small datasets (489 pairs)
+lora:
+  enabled: true
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.1
+
+# Data paths
+data:
+  train_file: "data/raw/train.tsv"
+  test_mslg2spa: "data/raw/test_mslg2spa.tsv"
+  test_spa2mslg: "data/raw/test_spa2mslg.tsv"
+  processed_dir: "data/processed/"
+  val_split: 0.15
+
+# Training
+training:
+  output_dir: "checkpoints/baseline"
+  num_train_epochs: 30
+  per_device_train_batch_size: 8
+  learning_rate: 5.0e-4
+  warmup_steps: 50
+  weight_decay: 0.01
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  load_best_model_at_end: true
+  metric_for_best_model: "chrf"
+  seed: 42
+
+# Generation (inference)
+generation:
+  num_beams: 4
+  max_new_tokens: 128
