@@ -21,7 +21,7 @@ def load_pairs(filepath: str | Path) -> pd.DataFrame:
     """
     Load a TSV file of (gloss, spanish) pairs into a DataFrame.
     """
-    df = pd.read_csv(filepath, sep="\t", header=None, names=["mslg", "spa"])
+    df = pd.read_csv(filepath, sep="\t", header=0, names=["mslg", "spa"])
 
     # Basic cleanings
     df = df.dropna() # remoce Nan lines
