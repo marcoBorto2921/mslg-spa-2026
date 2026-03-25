@@ -3,3 +3,4 @@ notebook
 ipykernel
 matplotlib
 seaborn
+pytest

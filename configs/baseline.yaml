@@ -1,6 +1,6 @@
 # Model configuration
 model:
-  name: "Helsinki-NLP/opus-mt-es-ROMANCE"
+  name: "facebook/mbart-large-50"
   max_source_length: 128
   max_target_length: 128
 
