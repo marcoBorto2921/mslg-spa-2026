@@ -150,7 +150,7 @@ def main():
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         data_collator=DataCollatorForSeq2Seq(tokenizer, model=model, padding=True),
         compute_metrics=make_compute_metrics(tokenizer, args.subtask),
     )
