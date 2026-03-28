@@ -202,6 +202,22 @@ wrapped in double quotes:
 The `scripts/predict.py` script generates correctly formatted files following
 the naming convention `TeamName_SolutionName_SUBTASK.txt`.
 
+## 8. Back-Translation Results
+
+Back-translation was implemented as a data augmentation technique on the
+`feature/back-translation` branch.
+
+**Pipeline:**
+1. 100 external Spanish sentences collected
+2. SPA2MSLG model (chrF 42.84) used to generate synthetic MSL glosses
+3. Round-trip filter tested at threshold=0.1 (kept 7/100) and 0.0 (kept 100/100)
+4. Final augmented dataset: 590 pairs (490 real + 100 synthetic)
+5. MSLG2SPA retrained on augmented dataset
+
+**Result:** chrF improved from 48.09 to 52.15 (+4.06 points) on the
+real validation set, confirming that back-translation is effective even
+with noisy synthetic data.
+
 ---
 
 ## References

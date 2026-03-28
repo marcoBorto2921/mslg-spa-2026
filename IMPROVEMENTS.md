@@ -5,29 +5,26 @@ ordered by expected impact and implementation effort.
 
 ---
 
-## 1. Back-Translation (High Impact, Medium Effort)
+## 1. Back-Translation ✅ Implemented
 
-### What it is
-Use the trained SPA2MSLG model to generate synthetic MSL glosses from
-external Spanish sentences, then add these synthetic pairs to the training set
-and retrain MSLG2SPA.
+### Results
+| System | Training pairs | chrF | BLEU |
+|---|---|---|---|
+| Baseline | 490 | 48.09 | 18.23 |
+| + Back-translation (threshold=0.0) | 590 | **52.15** | **24.05** |
 
-### Why it works
-Back-translation is the standard data augmentation technique for low-resource
-machine translation. It effectively doubles or triples the training data at
-the cost of some noise in the synthetic glosses.
+**+4.06 chrF points** — back-translation is effective even with noisy
+synthetic data and a weak base SPA2MSLG model (chrF 42.84).
 
-### How to implement it
-```python
-# 1. Collect external Spanish sentences (news, subtitles, etc.)
-# 2. Run SPA2MSLG model to generate synthetic glosses
-# 3. Filter by confidence score (keep only high-confidence translations)
-# 4. Add to training set and retrain MSLG2SPA
-```
+### Notes
+- Round-trip filter with threshold=0.1 kept only 7/100 pairs — too strict
+- Final run used threshold=0.0 (no filtering) — all 100 synthetic pairs kept
+- The SPA2MSLG model used for generation had chrF 42.84 — relatively weak
+- Despite noisy glosses, the additional training signal improved MSLG2SPA
 
-### Expected gain
-Potentially +5-10 chrF points on MSLG2SPA. The gain depends heavily on
-the quality of the SPA2MSLG model and the domain of the external sentences.
+### Conclusion
+Back-translation works on this task. A stronger SPA2MSLG model would
+likely produce better synthetic glosses and further improve results.
 
 ---
 

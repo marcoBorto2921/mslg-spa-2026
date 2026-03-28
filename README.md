@@ -83,6 +83,23 @@ python scripts/predict.py --config configs/baseline.yaml --subtask mslg2spa \
     --team YourTeam --solution baseline
 ```
 
+## Results
+
+### MSLG2SPA
+
+| System | Training pairs | chrF | BLEU | Best epoch |
+|---|---|---|---|---|
+| Baseline (mBART-50 + LoRA) | 490 | 48.09 | 18.23 | 13 |
+| + Back-translation | 590 | 52.15 | 24.05 | 9 |
+
+### SPA2MSLG
+
+| System | Training pairs | chrF | BLEU | Best epoch |
+|---|---|---|---|---|
+| Baseline (mBART-50 + LoRA) | 490 | 42.84 | 9.29 | 30 |
+
+*Official evaluation results (COMET, METEOR) will be updated after May 2026.*
+
 ## Requirements
 
 Python 3.11+, PyTorch 2.x, HuggingFace Transformers 5.x, PEFT 0.10+
