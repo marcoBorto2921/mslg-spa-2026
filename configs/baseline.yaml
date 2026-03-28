@@ -33,7 +33,7 @@ training:
   load_best_model_at_end: true
   metric_for_best_model: "chrf"
   greater_is_better: true
-  fp16: false
+  fp16: True
   seed: 42
 
 # Generation
