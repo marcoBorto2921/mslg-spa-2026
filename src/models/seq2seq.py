@@ -37,10 +37,11 @@ def load_model_and_tokenizer(
         from peft import LoraConfig, TaskType, get_peft_model
 
         lora_config = LoraConfig(
-            task_type=TaskType.SEQ_2_SEQ_LM,  # tell PEFT this is a seq2seq model
+            task_type=TaskType.SEQ_2_SEQ_LM,
             r=lora_r,
             lora_alpha=lora_alpha,
             lora_dropout=lora_dropout,
+            target_modules=["q_proj", "v_proj"],  # aggiungi questa riga
             bias="none",
         )
 
