@@ -42,6 +42,10 @@ def make_compute_metrics(tokenizer, subtask):
     def compute_metrics(eval_preds):
         preds, labels = eval_preds
 
+        # Clip predictions to valid token range before decoding
+        preds = np.clip(preds, 0, tokenizer.vocab_size - 1)
+
+
         # Replace -100 (padding) with pad_token_id before decoding
         labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
 
