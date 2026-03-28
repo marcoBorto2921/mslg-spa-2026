@@ -37,3 +37,5 @@ training:
 generation:
   num_beams: 4
   max_new_tokens: 128
+
+per_device_eval_batch_size: 16
