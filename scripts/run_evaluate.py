@@ -26,31 +26,32 @@ def parse_args():
 
 
 def load_trained_model(checkpoint_dir: str):
+    from transformers import MBart50Tokenizer
     checkpoint_dir = Path(checkpoint_dir)
     
-    tokenizer = AutoTokenizer.from_pretrained(
-        str(checkpoint_dir),
-        local_files_only=True
-    )
+    # Load tokenizer from base model — local checkpoint may lack tokenizer files
+    tokenizer = MBart50Tokenizer.from_pretrained("facebook/mbart-large-50")
 
     if (checkpoint_dir / "adapter_config.json").exists():
         import json
         adapter_config = json.load(open(checkpoint_dir / "adapter_config.json"))
         base_model_name = adapter_config["base_model_name_or_path"]
 
-        base_model = AutoModelForSeq2SeqLM.from_pretrained(base_model_name)
+        base_model = AutoModelForSeq2SeqLM.from_pretrained(
+            base_model_name,
+            local_files_only=False
+        )
         model = PeftModel.from_pretrained(
             base_model,
             str(checkpoint_dir),
-            local_files_only=True
+            local_files_only=False
         )
         model = model.merge_and_unload()
     else:
         model = AutoModelForSeq2SeqLM.from_pretrained(
             str(checkpoint_dir),
-            local_files_only=True
+            local_files_only=False
         )
-
     model.eval()
     return model, tokenizer
 
