@@ -25,32 +25,31 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_config(path: str) -> dict:
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
-
-
 def load_trained_model(checkpoint_dir: str):
-    """
-    Load a trained model and tokenizer from a checkpoint directory.
-    Handles both standard fine-tuned models and LoRA models.
-    """
     checkpoint_dir = Path(checkpoint_dir)
+    
+    tokenizer = AutoTokenizer.from_pretrained(
+        str(checkpoint_dir),
+        local_files_only=True
+    )
 
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
-
-    # Check if this is a LoRA checkpoint
     if (checkpoint_dir / "adapter_config.json").exists():
-        # LoRA model: load base model first, then apply LoRA weights on top
         import json
         adapter_config = json.load(open(checkpoint_dir / "adapter_config.json"))
         base_model_name = adapter_config["base_model_name_or_path"]
 
         base_model = AutoModelForSeq2SeqLM.from_pretrained(base_model_name)
-        model = PeftModel.from_pretrained(base_model, checkpoint_dir)
-        model = model.merge_and_unload()  # merge LoRA weights into base model
+        model = PeftModel.from_pretrained(
+            base_model,
+            str(checkpoint_dir),
+            local_files_only=True
+        )
+        model = model.merge_and_unload()
     else:
-        model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint_dir)
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            str(checkpoint_dir),
+            local_files_only=True
+        )
 
     model.eval()
     return model, tokenizer
