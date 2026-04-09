@@ -41,7 +41,7 @@ def load_model_and_tokenizer(
             r=lora_r,
             lora_alpha=lora_alpha,
             lora_dropout=lora_dropout,
-            target_modules=["q_proj", "v_proj"],  # aggiungi questa riga
+            target_modules=["q_proj", "v_proj"],
             bias="none",
         )
 

@@ -38,7 +38,7 @@ training:
 
 # Generation
 generation:
-  num_beams: 4
+  num_beams: 5
   max_new_tokens: 128
 
 # Logging

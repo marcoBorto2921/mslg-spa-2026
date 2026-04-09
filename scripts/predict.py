@@ -84,6 +84,7 @@ def main():
         model=model,
         tokenizer=tokenizer,
         sources=sources,
+        subtask=args.subtask,
         max_src_len=config["model"]["max_source_length"],
         max_new_tokens=config["generation"]["max_new_tokens"],
         num_beams=config["generation"]["num_beams"],

@@ -25,6 +25,11 @@ def parse_args():
     return parser.parse_args()
 
 
+def load_config(path: str) -> dict:
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
 def load_trained_model(checkpoint_dir: str):
     from transformers import MBart50Tokenizer
     checkpoint_dir = Path(checkpoint_dir)
@@ -60,6 +65,7 @@ def generate_translations(
     model,
     tokenizer,
     sources: list[str],
+    subtask: str = "mslg2spa",
     max_src_len: int = 128,
     max_new_tokens: int = 128,
     num_beams: int = 4,
@@ -71,6 +77,7 @@ def generate_translations(
         model:          Trained seq2seq model.
         tokenizer:      Corresponding tokenizer.
         sources:        List of source sentences to translate.
+        subtask:        'mslg2spa' or 'spa2mslg' — determines target language token.
         max_src_len:    Max tokenization length for sources.
         max_new_tokens: Max tokens to generate per translation.
         num_beams:      Beam search width.
@@ -80,6 +87,10 @@ def generate_translations(
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
+
+    # mBART requires forced_bos_token_id to set the target language
+    # MSLG2SPA: target is Spanish; SPA2MSLG: target is Spanish (MSL has no mBART code)
+    forced_bos_token_id = tokenizer.lang_code_to_id.get("es_XX")
 
     translations = []
 
@@ -99,6 +110,7 @@ def generate_translations(
                 num_beams=num_beams,
                 max_new_tokens=max_new_tokens,
                 early_stopping=True,
+                forced_bos_token_id=forced_bos_token_id,
             )
 
         translation = tokenizer.decode(output_ids[0], skip_special_tokens=True)
@@ -142,6 +154,7 @@ def main():
         model=model,
         tokenizer=tokenizer,
         sources=sources,
+        subtask=args.subtask,
         max_src_len=config["model"]["max_source_length"],
         max_new_tokens=config["generation"]["max_new_tokens"],
         num_beams=config["generation"]["num_beams"],
