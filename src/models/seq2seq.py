@@ -31,6 +31,11 @@ def load_model_and_tokenizer(
     """
     # Load tokenizer and model from HuggingFace Hub
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # mBART-50 requires src_lang/tgt_lang for text_target tokenization
+    if hasattr(tokenizer, "src_lang") and tokenizer.src_lang is None:
+        tokenizer.src_lang = "es_XX"
+    if hasattr(tokenizer, "tgt_lang") and tokenizer.tgt_lang is None:
+        tokenizer.tgt_lang = "es_XX"
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
     if use_lora:

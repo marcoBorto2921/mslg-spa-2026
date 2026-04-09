@@ -36,6 +36,9 @@ def load_trained_model(checkpoint_dir: str):
     
     # Load tokenizer from base model — local checkpoint may lack tokenizer files
     tokenizer = MBart50Tokenizer.from_pretrained("facebook/mbart-large-50")
+    # mBART-50 requires src_lang/tgt_lang for text_target tokenization
+    tokenizer.src_lang = "es_XX"
+    tokenizer.tgt_lang = "es_XX"
 
     if (checkpoint_dir / "adapter_config.json").exists():
         import json
