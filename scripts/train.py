@@ -106,7 +106,21 @@ def main():
     )
 
     # ------------------------------------------------------------------ #
-    # 3. Build datasets
+    # 3. Preprocessing (optional)
+    # ------------------------------------------------------------------ #
+    preprocess_fn = None
+    prep_cfg = config.get("preprocessing", {})
+    if prep_cfg.get("enabled", False):
+        from src.data.preprocessing import preprocess_gloss, add_hyphen_special_token
+        use_hyphen = prep_cfg.get("hyphen_special_token", False)
+        preprocess_fn = lambda text: preprocess_gloss(text, use_hyphen_token=use_hyphen)
+        if use_hyphen:
+            add_hyphen_special_token(tokenizer, model)
+            print("  [preprocessing] Added [HYPHEN] special token, embeddings resized")
+        print(f"  [preprocessing] enabled  |  hyphen_token={use_hyphen}")
+
+    # ------------------------------------------------------------------ #
+    # 4. Build datasets
     # ------------------------------------------------------------------ #
     train_dataset = TranslationDataset(
         data=train_df,
@@ -114,6 +128,7 @@ def main():
         subtask=args.subtask,
         max_src_len=config["model"]["max_source_length"],
         max_tgt_len=config["model"]["max_target_length"],
+        preprocess_fn=preprocess_fn,
     )
     val_dataset = TranslationDataset(
         data=val_df,
@@ -121,10 +136,11 @@ def main():
         subtask=args.subtask,
         max_src_len=config["model"]["max_source_length"],
         max_tgt_len=config["model"]["max_target_length"],
+        preprocess_fn=preprocess_fn,
     )
 
     # ------------------------------------------------------------------ #
-    # 4. Training arguments
+    # 5. Training arguments
     # ------------------------------------------------------------------ #
     training_args = Seq2SeqTrainingArguments(
         output_dir=config["training"]["output_dir"],
@@ -147,7 +163,7 @@ def main():
     )
 
     # ------------------------------------------------------------------ #
-    # 5. Trainer
+    # 6. Trainer
     # ------------------------------------------------------------------ #
     trainer = Seq2SeqTrainer(
         model=model,
@@ -160,7 +176,7 @@ def main():
     )
 
     # ------------------------------------------------------------------ #
-    # 6. Train
+    # 7. Train
     # ------------------------------------------------------------------ #
     print(f"\nStarting training — subtask: {args.subtask}")
     trainer.train()
