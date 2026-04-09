@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_preprocessing.py -v)",
+      "Bash(python -m pytest tests/test_dataset.py -v)",
+      "Bash(python scripts/train.py --config configs/baseline.yaml --subtask mslg2spa --help)",
+      "Bash(python -c \"from scripts.ensemble_predict import find_top_checkpoints, self_consistency_vote, write_submission; print\\(''OK''\\)\")",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -c \":*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
