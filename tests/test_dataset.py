@@ -125,3 +125,37 @@ def test_dataset_invalid_subtask(sample_df):
 
     with pytest.raises(AssertionError):
         TranslationDataset(sample_df, tokenizer, subtask="invalid")
+
+
+def test_dataset_applies_preprocess_fn(sample_df):
+    """preprocess_fn should be applied to sources only, not targets."""
+    from unittest.mock import MagicMock
+
+    tokenizer = MagicMock()
+    tokenizer.pad_token_id = 0
+    tokenizer.side_effect = lambda *a, **kw: {
+        "input_ids": __import__("torch").zeros(1, 128, dtype=__import__("torch").long),
+        "attention_mask": __import__("torch").ones(1, 128, dtype=__import__("torch").long),
+    }
+
+    def mark_fn(text: str) -> str:
+        return text + "_PROCESSED"
+
+    dataset = TranslationDataset(
+        sample_df, tokenizer, subtask="mslg2spa", preprocess_fn=mark_fn
+    )
+    # preprocess_fn applied to MSLG sources
+    assert dataset.sources[0] == "YO FELIZ_PROCESSED"
+    # targets (SPA) never preprocessed
+    assert dataset.targets[0] == "Estoy feliz."
+
+
+def test_dataset_no_preprocess_fn_unchanged(sample_df):
+    """Without preprocess_fn, sources are unchanged."""
+    from unittest.mock import MagicMock
+
+    tokenizer = MagicMock()
+    tokenizer.pad_token_id = 0
+
+    dataset = TranslationDataset(sample_df, tokenizer, subtask="mslg2spa")
+    assert dataset.sources[0] == "YO FELIZ"

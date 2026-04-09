@@ -24,9 +24,9 @@ def load_pairs(filepath: str | Path) -> pd.DataFrame:
     df = pd.read_csv(filepath, sep="\t", header=0, names=["mslg", "spa"])
 
     # Basic cleanings
-    df = df.dropna() # remoce Nan lines
+    df = df.dropna()
     df["mslg"] = df["mslg"].str.strip()
-    df["spa"] = df["spa"].str.strip()   # remove nitial e final spaces
+    df["spa"] = df["spa"].str.strip()
     df = df[(df["mslg"] != "") & (df["spa"] != "")]  # remove lines with empty string
     df = df.reset_index(drop=True)
 
@@ -59,20 +59,23 @@ class TranslationDataset(Dataset):
       - spa2mslg: source=spa, target=mslg
 
     Args:
-        data:        DataFrame with columns ['mslg', 'spa'].
-        tokenizer:   HuggingFace tokenizer.
-        subtask:     'mslg2spa' or 'spa2mslg'.
-        max_src_len: Max token length for source sequences.
-        max_tgt_len: Max token length for target sequences.
+        data:          DataFrame with columns ['mslg', 'spa'].
+        tokenizer:     HuggingFace tokenizer.
+        subtask:       'mslg2spa' or 'spa2mslg'.
+        max_src_len:   Max token length for source sequences.
+        max_tgt_len:   Max token length for target sequences.
+        preprocess_fn: Optional callable applied to source strings only.
+                       Used for MSL gloss normalization experiments.
     """
 
-    def __init__(   #costruttore
+    def __init__(
         self,
         data: pd.DataFrame,
         tokenizer: PreTrainedTokenizer,
         subtask: str,
         max_src_len: int = 128,
-        max_tgt_len: int = 128,  # lungezze massime
+        max_tgt_len: int = 128,
+        preprocess_fn=None,
     ) -> None:
 
         assert subtask in ("mslg2spa", "spa2mslg"), \
@@ -84,11 +87,17 @@ class TranslationDataset(Dataset):
 
         # Assign source/target based on subtask direction
         if subtask == "mslg2spa":
-            self.sources = data["mslg"].tolist()
+            sources = data["mslg"].tolist()
             self.targets = data["spa"].tolist()
         else:
-            self.sources = data["spa"].tolist()
+            sources = data["spa"].tolist()
             self.targets = data["mslg"].tolist()
+
+        # Apply preprocessing to source side only (targets are never preprocessed)
+        if preprocess_fn is not None:
+            self.sources = [preprocess_fn(s) for s in sources]
+        else:
+            self.sources = sources
 
     def __len__(self) -> int:
         return len(self.sources)
