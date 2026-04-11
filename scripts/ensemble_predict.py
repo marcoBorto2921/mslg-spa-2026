@@ -6,7 +6,7 @@ Loads top-N checkpoints by eval_chrf from trainer_state.json,
 generates translations from each, and selects the best translation
 per sentence via self-consistency voting (mean chrF against the other N-1).
 
-Usage:
+Usage (submission mode — requires test files):
     python scripts/ensemble_predict.py \\
         --config configs/baseline.yaml \\
         --subtask mslg2spa \\
@@ -14,12 +14,22 @@ Usage:
         --team YourTeam \\
         --solution ensemble3 \\
         --n_checkpoints 3
+
+Usage (validation mode — compares single-best vs ensemble on val split):
+    python scripts/ensemble_predict.py \\
+        --config configs/baseline.yaml \\
+        --subtask mslg2spa \\
+        --checkpoint_dir checkpoints/mslg2spa \\
+        --validate \\
+        --n_checkpoints 3
 """
 
 import argparse
 import json
 import yaml
 from pathlib import Path
+
+from sklearn.model_selection import train_test_split
 
 from src.data.dataset import load_pairs
 from src.evaluation.metrics import compute_chrf
@@ -34,13 +44,22 @@ def parse_args():
                         choices=["mslg2spa", "spa2mslg"])
     parser.add_argument("--checkpoint_dir", required=True,
                         help="Directory containing checkpoint-* subdirectories")
-    parser.add_argument("--team",           required=True,
-                        help="Your team name")
-    parser.add_argument("--solution",       required=True,
-                        help="Solution label (e.g. ensemble3)")
+    parser.add_argument("--team",           default=None,
+                        help="Your team name (required unless --validate)")
+    parser.add_argument("--solution",       default=None,
+                        help="Solution label, e.g. ensemble3 (required unless --validate)")
     parser.add_argument("--n_checkpoints",  type=int, default=3,
                         help="Number of top checkpoints to ensemble (default: 3)")
-    return parser.parse_args()
+    parser.add_argument("--validate",       action="store_true",
+                        help="Run on val split (recreated from train_file with same seed)"
+                             " and report chrF for single-best vs ensemble. "
+                             "No submission file is written.")
+    args = parser.parse_args()
+
+    if not args.validate and (args.team is None or args.solution is None):
+        parser.error("--team and --solution are required unless --validate is set")
+
+    return args
 
 
 def load_config(path: str) -> dict:
@@ -157,23 +176,56 @@ def write_submission(predictions: list[str], output_path: Path) -> None:
     print(f"\nSubmission saved to {output_path}  ({len(predictions)} lines)")
 
 
+def load_validation_sources_and_refs(
+    config: dict, subtask: str
+) -> tuple[list[str], list[str]]:
+    """Recreate the val split from train_file using the same seed as train.py.
+
+    Mirrors the split logic in ``scripts/train.py`` so that the validation set
+    used here is bit-identical to the one used during training.
+
+    Returns:
+        (sources, references) lists for the given subtask direction.
+    """
+    df = load_pairs(config["data"]["train_file"])
+    _, val_df = train_test_split(
+        df,
+        test_size=config["data"]["val_split"],
+        random_state=config["training"]["seed"],
+    )
+    val_df = val_df.reset_index(drop=True)
+
+    if subtask == "mslg2spa":
+        src_col, tgt_col = "mslg", "spa"
+    else:
+        src_col, tgt_col = "spa", "mslg"
+
+    return val_df[src_col].tolist(), val_df[tgt_col].tolist()
+
+
 def main():
     args   = parse_args()
     config = load_config(args.config)
 
     # ------------------------------------------------------------------ #
-    # 1. Load test sources
+    # 1. Load sources (val split in validate mode, test file otherwise)
     # ------------------------------------------------------------------ #
-    if args.subtask == "mslg2spa":
-        test_file = config["data"]["test_mslg2spa"]
-        src_col   = "mslg"
-    else:
-        test_file = config["data"]["test_spa2mslg"]
-        src_col   = "spa"
+    references: list[str] | None = None
 
-    df      = load_pairs(test_file)
-    sources = df[src_col].tolist()
-    print(f"Loaded {len(sources)} test instances for {args.subtask}")
+    if args.validate:
+        sources, references = load_validation_sources_and_refs(config, args.subtask)
+        print(f"[VALIDATE] Loaded {len(sources)} val instances for {args.subtask}")
+    else:
+        if args.subtask == "mslg2spa":
+            test_file = config["data"]["test_mslg2spa"]
+            src_col   = "mslg"
+        else:
+            test_file = config["data"]["test_spa2mslg"]
+            src_col   = "spa"
+
+        df      = load_pairs(test_file)
+        sources = df[src_col].tolist()
+        print(f"Loaded {len(sources)} test instances for {args.subtask}")
 
     # ------------------------------------------------------------------ #
     # 2. Find top-N checkpoints by eval_chrf
@@ -196,6 +248,8 @@ def main():
             max_src_len=config["model"]["max_source_length"],
             max_new_tokens=config["generation"]["max_new_tokens"],
             num_beams=config["generation"]["num_beams"],
+            length_penalty=config["generation"].get("length_penalty", 1.0),
+            no_repeat_ngram_size=config["generation"].get("no_repeat_ngram_size", 0),
         )
         all_predictions.append(preds)
         del model  # free GPU memory between checkpoints
@@ -207,7 +261,34 @@ def main():
     final_predictions = self_consistency_vote(all_predictions)
 
     # ------------------------------------------------------------------ #
-    # 5. Write submission file
+    # 5a. Validate mode: report single-best vs ensemble chrF on val split
+    # ------------------------------------------------------------------ #
+    if args.validate:
+        assert references is not None
+
+        print(f"\n{'='*56}")
+        print(f"  Validation results — {args.subtask.upper()}")
+        print(f"{'='*56}")
+
+        # Per-checkpoint chrF (top checkpoint is index 0 = single-best baseline)
+        per_ckpt_chrf = []
+        for ckpt, preds in zip(top_checkpoints, all_predictions):
+            score = compute_chrf(preds, references)
+            per_ckpt_chrf.append(score)
+            print(f"  {ckpt.name:<30}  chrF = {score:.4f}")
+
+        single_best_chrf = per_ckpt_chrf[0]
+        ensemble_chrf    = compute_chrf(final_predictions, references)
+        delta            = ensemble_chrf - single_best_chrf
+
+        print(f"\n  {'single-best (top-1)':<30}  chrF = {single_best_chrf:.4f}")
+        print(f"  {'ensemble (self-cons vote)':<30}  chrF = {ensemble_chrf:.4f}")
+        print(f"  {'delta':<30}         {delta:+.4f}")
+        print(f"{'='*56}\n")
+        return
+
+    # ------------------------------------------------------------------ #
+    # 5b. Submission mode: write output file
     # ------------------------------------------------------------------ #
     filename    = f"{args.team}_{args.solution}_{args.subtask.upper()}.txt"
     output_path = Path("outputs") / filename

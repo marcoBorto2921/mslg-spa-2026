@@ -88,6 +88,8 @@ def main():
         max_src_len=config["model"]["max_source_length"],
         max_new_tokens=config["generation"]["max_new_tokens"],
         num_beams=config["generation"]["num_beams"],
+        length_penalty=config["generation"].get("length_penalty", 1.0),
+        no_repeat_ngram_size=config["generation"].get("no_repeat_ngram_size", 0),
     )
 
     # ------------------------------------------------------------------ #

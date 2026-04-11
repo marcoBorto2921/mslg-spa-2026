@@ -103,6 +103,7 @@ def main():
         lora_r=config["lora"]["r"],
         lora_alpha=config["lora"]["lora_alpha"],
         lora_dropout=config["lora"]["lora_dropout"],
+        lora_target_modules=config["lora"].get("target_modules"),
     )
 
     # ------------------------------------------------------------------ #
@@ -158,8 +159,20 @@ def main():
         predict_with_generate=True,  # needed for seq2seq evaluation
         fp16=config["training"]["fp16"],
         seed=config["training"]["seed"],
+        label_smoothing_factor=config["training"].get("label_smoothing_factor", 0.0),
+        # Opt-in: align eval-time decoding with final beam search. Off by default
+        # so existing baseline.yaml runs are bit-for-bit identical.
+        generation_num_beams=(
+            config["generation"].get("num_beams")
+            if config["training"].get("eval_with_beam_search", False) else None
+        ),
+        generation_max_length=(
+            config["generation"].get("max_new_tokens")
+            if config["training"].get("eval_with_beam_search", False) else None
+        ),
         report_to=config["logging"]["report_to"],
         logging_steps=config["logging"]["logging_steps"],
+        run_name=config["logging"].get("run_name"),
     )
 
     # ------------------------------------------------------------------ #

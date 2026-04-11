@@ -72,18 +72,25 @@ def generate_translations(
     max_src_len: int = 128,
     max_new_tokens: int = 128,
     num_beams: int = 4,
+    length_penalty: float = 1.0,
+    no_repeat_ngram_size: int = 0,
 ) -> list[str]:
     """
     Generate translations for a list of source sentences.
 
     Args:
-        model:          Trained seq2seq model.
-        tokenizer:      Corresponding tokenizer.
-        sources:        List of source sentences to translate.
-        subtask:        'mslg2spa' or 'spa2mslg' — determines target language token.
-        max_src_len:    Max tokenization length for sources.
-        max_new_tokens: Max tokens to generate per translation.
-        num_beams:      Beam search width.
+        model:                Trained seq2seq model.
+        tokenizer:            Corresponding tokenizer.
+        sources:              List of source sentences to translate.
+        subtask:              'mslg2spa' or 'spa2mslg' — determines target language token.
+        max_src_len:          Max tokenization length for sources.
+        max_new_tokens:       Max tokens to generate per translation.
+        num_beams:             Beam search width.
+        length_penalty:       Exponential penalty to beam scores; >1 favors longer
+                              outputs, <1 favors shorter. 1.0 = neutral (HF default).
+        no_repeat_ngram_size: If >0, block repetition of n-grams of this size in
+                              generation. Typical: 0 (off) or 3. Useful for short
+                              glosses where mBART can loop.
 
     Returns:
         List of translated strings.
@@ -114,6 +121,8 @@ def generate_translations(
                 max_new_tokens=max_new_tokens,
                 early_stopping=True,
                 forced_bos_token_id=forced_bos_token_id,
+                length_penalty=length_penalty,
+                no_repeat_ngram_size=no_repeat_ngram_size,
             )
 
         translation = tokenizer.decode(output_ids[0], skip_special_tokens=True)
@@ -161,6 +170,8 @@ def main():
         max_src_len=config["model"]["max_source_length"],
         max_new_tokens=config["generation"]["max_new_tokens"],
         num_beams=config["generation"]["num_beams"],
+        length_penalty=config["generation"].get("length_penalty", 1.0),
+        no_repeat_ngram_size=config["generation"].get("no_repeat_ngram_size", 0),
     )
 
     # ------------------------------------------------------------------ #

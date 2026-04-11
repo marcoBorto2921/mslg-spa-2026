@@ -20,8 +20,14 @@ from transformers import PreTrainedTokenizer
 def load_pairs(filepath: str | Path) -> pd.DataFrame:
     """
     Load a TSV file of (gloss, spanish) pairs into a DataFrame.
+
+    The source file is UTF-8 encoded (contains Spanish accents É/Á/Ñ/etc).
+    Pass encoding='utf-8' explicitly because on Windows pandas defaults to
+    the system code page (cp1252) which can misread accented characters.
     """
-    df = pd.read_csv(filepath, sep="\t", header=0, names=["mslg", "spa"])
+    df = pd.read_csv(
+        filepath, sep="\t", header=0, names=["mslg", "spa"], encoding="utf-8"
+    )
 
     # Basic cleanings
     df = df.dropna()

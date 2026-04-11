@@ -1,0 +1,82 @@
+# configs/strong.yaml
+#
+# Aggressive config aligned with NotebookLM literature findings (2026-04-11):
+#   - LoRA target_modules: ALL linear (q,k,v,out_proj,fc1,fc2) — LowRA framework
+#     shows better stability/performance on low-resource than q,v only (C16).
+#   - LoRA r=64, alpha=64 — recommended for datasets <500 pairs to give enough
+#     capacity to absorb gloss-text mapping without overfitting (C17).
+#   - label_smoothing_factor: 0.1 — effective on mBART fine-tuning (C22).
+#     NOTE: literature also cites SALS (Semantically Aware Label Smoothing) as a
+#     specialized variant for gloss training — not implemented here, future work.
+#   - num_train_epochs: 40 — SPA2MSLG was still improving late at 30.
+#   - eval_with_beam_search: true — align val chrF with final decoding.
+#   - no_repeat_ngram_size: 3 — blocks trigram loops on short glosses.
+#
+# Reference thresholds from literature (NotebookLM Section F):
+#   - BARTO fine-tuned baseline on Lara-Ortiz corpus: BLEU-4 35.0
+#   - mBART on SIGNUM (~600 pairs) gloss→text: BLEU-4 67.60
+#   - mBART on PHOENIX-14T gloss→German: BLEU-4 25.58
+#   - Lara-Ortiz + ASL data augmentation: 62 → 85 BLEU
+# Current local baseline: BLEU ~24 (with back-translation) — significantly below
+# the BARTO 35.0 reference. Closing this gap is the primary goal of strong.yaml.
+#
+# Keep baseline.yaml as the reference 52.15 chrF run. Do not overwrite its
+# checkpoints — this config writes to checkpoints/strong.
+
+# Model configuration
+model:
+  name: "facebook/mbart-large-50"
+  max_source_length: 128
+  max_target_length: 128
+
+# LoRA — LowRA-style all-linear targets + higher rank for low-resource
+lora:
+  enabled: true
+  r: 64
+  lora_alpha: 64
+  lora_dropout: 0.1
+  target_modules: ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
+
+# Data paths (unchanged)
+data:
+  train_file: "data/raw/MSLG_SPA_train.txt"
+  test_mslg2spa: "data/raw/test_mslg2spa.tsv"
+  test_spa2mslg: "data/raw/test_spa2mslg.tsv"
+  processed_dir: "data/processed/"
+  val_split: 0.15
+
+# Training
+# Memory note: LoRA trainable params jump from 2.36M (baseline) to 34.6M (r=64 +
+# 6 target modules = 5.36% of 645M). With Adam optimizer states (2x) this is
+# ~70M extra params on GPU. T4 16GB may OOM at batch_size=8 — if so, drop to
+# 4 and raise gradient_accumulation_steps to 2 (keeps effective batch=8).
+training:
+  output_dir: "checkpoints/strong"
+  num_train_epochs: 40
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 16
+  learning_rate: 5.0e-4
+  warmup_steps: 50
+  weight_decay: 0.01
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  load_best_model_at_end: true
+  metric_for_best_model: "chrf"
+  greater_is_better: true
+  fp16: True
+  seed: 42
+  label_smoothing_factor: 0.1
+  eval_with_beam_search: true
+
+# Generation
+generation:
+  num_beams: 5
+  max_new_tokens: 128
+  length_penalty: 1.0
+  no_repeat_ngram_size: 3
+
+# Logging
+logging:
+  report_to: "none"
+  logging_steps: 10
+  run_name: "strong_v1"

@@ -10,6 +10,9 @@ lora:
   r: 16
   lora_alpha: 32
   lora_dropout: 0.1
+  # mBART attention projections. Default baseline uses q+v only (matches the
+  # chrF 52.15 reference run). See configs/strong.yaml for q+k+v+out variant.
+  target_modules: ["q_proj", "v_proj"]
 
 # Data paths
 data:
@@ -35,11 +38,20 @@ training:
   greater_is_better: true
   fp16: True
   seed: 42
+  # 0.0 = no label smoothing (baseline default). strong.yaml enables 0.1.
+  label_smoothing_factor: 0.0
+  # If true, eval-time decoding uses beam search with the settings below.
+  # Default false preserves the legacy baseline behavior (greedy eval during train).
+  eval_with_beam_search: false
 
 # Generation
 generation:
   num_beams: 5
   max_new_tokens: 128
+  # 1.0 = neutral. <1 shortens, >1 lengthens. HF default.
+  length_penalty: 1.0
+  # 0 = off. Set to 3 to block trigram repetition (useful for mBART loops).
+  no_repeat_ngram_size: 0
 
 # Logging
 logging:
