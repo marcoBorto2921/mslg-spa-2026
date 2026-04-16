@@ -1,0 +1,63 @@
+# EXP-003 — Hyperparameter tuning on baseline LoRA config (r=16, q+v)
+#
+# Changes vs baseline.yaml:
+#   learning_rate:        5e-4 → 1e-4   (5e-4 too high for LoRA; standard range 1e-4–2e-4)
+#   warmup_steps:         50  → 100     (proportional to lower LR)
+#   label_smoothing_factor: 0.0 → 0.1   (regularization on 490 pairs)
+#   eval_with_beam_search: false → true  (align best-checkpoint metric with inference decoding)
+#   no_repeat_ngram_size: 0  → 3        (prevent mBART repetition loops)
+#   num_train_epochs:     30  → 40      (lower LR needs more steps to converge)
+#   output_dir:           checkpoints/baseline → checkpoints/tuned
+
+# Model configuration
+model:
+  name: "facebook/mbart-large-50"
+  max_source_length: 128
+  max_target_length: 128
+
+# LoRA — unchanged from baseline (r=16 is correct for 490 pairs)
+lora:
+  enabled: true
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.1
+  target_modules: ["q_proj", "v_proj"]
+
+# Data paths — unchanged
+data:
+  train_file: "data/raw/MSLG_SPA_train.txt"
+  test_mslg2spa: "data/raw/MSLG2SPA_test.txt"
+  test_spa2mslg: "data/raw/SPA2MSLG_test.txt"
+  processed_dir: "data/processed/"
+  val_split: 0.15
+
+# Training
+training:
+  output_dir: "checkpoints/tuned"
+  num_train_epochs: 40
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 16
+  learning_rate: 1.0e-4
+  warmup_steps: 100
+  weight_decay: 0.01
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  load_best_model_at_end: true
+  metric_for_best_model: "chrf"
+  greater_is_better: true
+  fp16: true
+  seed: 42
+  label_smoothing_factor: 0.1
+  eval_with_beam_search: true
+
+# Generation
+generation:
+  num_beams: 5
+  max_new_tokens: 128
+  length_penalty: 1.0
+  no_repeat_ngram_size: 3
+
+# Logging
+logging:
+  report_to: "none"
+  logging_steps: 10
