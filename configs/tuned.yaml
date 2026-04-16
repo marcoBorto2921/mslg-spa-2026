@@ -47,7 +47,7 @@ training:
   greater_is_better: true
   fp16: true
   seed: 42
-  label_smoothing_factor: 0.1
+  label_smoothing_factor: 0.0
   eval_with_beam_search: true
   early_stopping_patience: 5
   max_grad_norm: 0.3
@@ -57,7 +57,7 @@ generation:
   num_beams: 5
   max_new_tokens: 128
   length_penalty: 1.0
-  no_repeat_ngram_size: 3
+  no_repeat_ngram_size: 0
 
 # Logging
 logging:
