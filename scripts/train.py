@@ -16,7 +16,12 @@ import argparse
 import yaml
 import numpy as np
 from sklearn.model_selection import train_test_split
-from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, DataCollatorForSeq2Seq, EarlyStoppingCallback
+from transformers import (
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
+    DataCollatorForSeq2Seq,
+    EarlyStoppingCallback,
+)
 import evaluate
 
 from src.data.dataset import load_pairs, print_stats, TranslationDataset
@@ -25,7 +30,7 @@ from src.models.seq2seq import load_model_and_tokenizer
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config",  required=True, help="Path to YAML config file")
+    parser.add_argument("--config", required=True, help="Path to YAML config file")
     parser.add_argument("--subtask", required=True, choices=["mslg2spa", "spa2mslg"])
     return parser.parse_args()
 
@@ -40,8 +45,8 @@ def make_compute_metrics(tokenizer, subtask):
     Returns a compute_metrics function for the HuggingFace Trainer.
     Trainer calls this function at the end of each evaluation epoch.
     """
-    chrf_metric   = evaluate.load("chrf")
-    bleu_metric   = evaluate.load("sacrebleu")
+    chrf_metric = evaluate.load("chrf")
+    bleu_metric = evaluate.load("sacrebleu")
 
     def compute_metrics(eval_preds):
         preds, labels = eval_preds
@@ -49,26 +54,23 @@ def make_compute_metrics(tokenizer, subtask):
         # Clip predictions to valid token range before decoding
         preds = np.clip(preds, 0, tokenizer.vocab_size - 1)
 
-
         # Replace -100 (padding) with pad_token_id before decoding
         labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
 
         # Decode token ids back to strings
-        decoded_preds  = tokenizer.batch_decode(preds,   skip_special_tokens=True)
-        decoded_labels = tokenizer.batch_decode(labels,  skip_special_tokens=True)
+        decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
+        decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
         # Strip whitespace
-        decoded_preds  = [p.strip() for p in decoded_preds]
+        decoded_preds = [p.strip() for p in decoded_preds]
         decoded_labels = [l.strip() for l in decoded_labels]
 
         # Compute metrics
         chrf = chrf_metric.compute(
-            predictions=decoded_preds,
-            references=[[r] for r in decoded_labels]
+            predictions=decoded_preds, references=[[r] for r in decoded_labels]
         )
         bleu = bleu_metric.compute(
-            predictions=decoded_preds,
-            references=[[r] for r in decoded_labels]
+            predictions=decoded_preds, references=[[r] for r in decoded_labels]
         )
 
         return {
@@ -80,7 +82,7 @@ def make_compute_metrics(tokenizer, subtask):
 
 
 def main():
-    args   = parse_args()
+    args = parse_args()
     config = load_config(args.config)
 
     # ------------------------------------------------------------------ #
@@ -117,6 +119,7 @@ def main():
     prep_cfg = config.get("preprocessing", {})
     if prep_cfg.get("enabled", False):
         from src.data.preprocessing import preprocess_gloss, add_hyphen_special_token
+
         use_hyphen = prep_cfg.get("hyphen_special_token", False)
         preprocess_fn = lambda text: preprocess_gloss(text, use_hyphen_token=use_hyphen)
         if use_hyphen:
@@ -162,17 +165,20 @@ def main():
         greater_is_better=config["training"]["greater_is_better"],
         predict_with_generate=True,  # needed for seq2seq evaluation
         fp16=config["training"]["fp16"],
+        max_grad_norm=config["training"].get("max_grad_norm", 1.0),
         seed=config["training"]["seed"],
         label_smoothing_factor=config["training"].get("label_smoothing_factor", 0.0),
         # Opt-in: align eval-time decoding with final beam search. Off by default
         # so existing baseline.yaml runs are bit-for-bit identical.
         generation_num_beams=(
             config["generation"].get("num_beams")
-            if config["training"].get("eval_with_beam_search", False) else None
+            if config["training"].get("eval_with_beam_search", False)
+            else None
         ),
         generation_max_length=(
             config["generation"].get("max_new_tokens")
-            if config["training"].get("eval_with_beam_search", False) else None
+            if config["training"].get("eval_with_beam_search", False)
+            else None
         ),
         report_to=config["logging"]["report_to"],
         logging_steps=config["logging"]["logging_steps"],
