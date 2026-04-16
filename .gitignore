@@ -36,3 +36,6 @@ Thumbs.db
 *.safetensors
 
 PROJECT_LOG.md
+
+# Claude Code internal files
+.claude/
