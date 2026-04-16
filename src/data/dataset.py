@@ -19,21 +19,31 @@ from transformers import PreTrainedTokenizer
 
 def load_pairs(filepath: str | Path) -> pd.DataFrame:
     """
-    Load a TSV file of (gloss, spanish) pairs into a DataFrame.
+    Load a TSV file of gloss/Spanish pairs into a DataFrame.
+
+    Handles both formats:
+      - Train:  ID \\t MSLG \\t SPA  (3 columns, header row)
+      - Test:   ID \\t MSLG         (2 columns, header row)
+               ID \\t SPA          (2 columns, header row)
+
+    Returns a DataFrame with lowercase column names, ID column dropped.
+    Train files yield columns ['mslg', 'spa']; test files yield one of the two.
 
     The source file is UTF-8 encoded (contains Spanish accents É/Á/Ñ/etc).
     Pass encoding='utf-8' explicitly because on Windows pandas defaults to
     the system code page (cp1252) which can misread accented characters.
     """
-    df = pd.read_csv(
-        filepath, sep="\t", header=0, names=["mslg", "spa"], encoding="utf-8"
-    )
+    df = pd.read_csv(filepath, sep="\t", header=0, encoding="utf-8")
+    df.columns = [c.lower() for c in df.columns]
+    if "id" in df.columns:
+        df = df.drop(columns=["id"])
 
-    # Basic cleanings
     df = df.dropna()
-    df["mslg"] = df["mslg"].str.strip()
-    df["spa"] = df["spa"].str.strip()
-    df = df[(df["mslg"] != "") & (df["spa"] != "")]  # remove lines with empty string
+    for col in df.select_dtypes(include="str").columns:
+        df[col] = df[col].str.strip()
+    # Remove rows where any text column is empty
+    for col in df.select_dtypes(include="str").columns:
+        df = df[df[col] != ""]
     df = df.reset_index(drop=True)
 
     return df

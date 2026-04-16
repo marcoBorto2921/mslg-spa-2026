@@ -36,16 +36,24 @@ def load_config(path: str) -> dict:
 def write_submission(
     predictions: list[str],
     output_path: Path,
+    ids: list[int] | None = None,
 ) -> None:
     """
-    Write predictions to a submission file in the official format.
+    Write predictions to a submission file.
 
-    Official format (one line per instance):
-        "SystemOutput"\n
+    If IDs are provided, writes ID\\tprediction per line (matches test file structure).
+    Otherwise writes one plain prediction per line.
+
+    NOTE: Official submission format not documented — using ID\\tprediction by default
+    to preserve alignment with the test set IDs.
     """
     with open(output_path, "w", encoding="utf-8") as f:
-        for pred in predictions:
-            f.write(f'"{pred}"\n')
+        if ids is not None:
+            for id_, pred in zip(ids, predictions):
+                f.write(f"{id_}\t{pred}\n")
+        else:
+            for pred in predictions:
+                f.write(f"{pred}\n")
 
     print(f"Submission saved to {output_path}")
     print(f"Lines written: {len(predictions)}")
@@ -65,6 +73,9 @@ def main():
         test_file = config["data"]["test_spa2mslg"]
         src_col   = "spa"
 
+    import pandas as pd
+    raw_df  = pd.read_csv(test_file, sep="\t", header=0, encoding="utf-8")
+    ids     = raw_df["ID"].tolist()
     df      = load_pairs(test_file)
     sources = df[src_col].tolist()
 
@@ -100,7 +111,7 @@ def main():
     output_path = Path("outputs") / filename
     output_path.parent.mkdir(exist_ok=True)
 
-    write_submission(predictions, output_path)
+    write_submission(predictions, output_path, ids=ids)
 
 
 if __name__ == "__main__":

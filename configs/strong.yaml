@@ -40,8 +40,8 @@ lora:
 # Data paths (unchanged)
 data:
   train_file: "data/raw/MSLG_SPA_train.txt"
-  test_mslg2spa: "data/raw/test_mslg2spa.tsv"
-  test_spa2mslg: "data/raw/test_spa2mslg.tsv"
+  test_mslg2spa: "data/raw/MSLG2SPA_test.txt"
+  test_spa2mslg: "data/raw/SPA2MSLG_test.txt"
   processed_dir: "data/processed/"
   val_split: 0.15
 
