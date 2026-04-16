@@ -39,10 +39,10 @@ def load_pairs(filepath: str | Path) -> pd.DataFrame:
         df = df.drop(columns=["id"])
 
     df = df.dropna()
-    for col in df.select_dtypes(include="str").columns:
+    for col in df.select_dtypes(include="object").columns:
         df[col] = df[col].str.strip()
     # Remove rows where any text column is empty
-    for col in df.select_dtypes(include="str").columns:
+    for col in df.select_dtypes(include="object").columns:
         df = df[df[col] != ""]
     df = df.reset_index(drop=True)
 
