@@ -24,10 +24,15 @@ Usage (validation mode — compares single-best vs ensemble on val split):
         --n_checkpoints 3
 """
 
+import sys
+from pathlib import Path
+
+# Ensure project root is on sys.path when running as a script
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import argparse
 import json
 import yaml
-from pathlib import Path
 
 from sklearn.model_selection import train_test_split
 

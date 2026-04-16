@@ -9,10 +9,15 @@ Usage:
     python scripts/preprocess.py --config configs/baseline.yaml
 """
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import argparse
 import yaml
 import pandas as pd
-from pathlib import Path
+
 from src.data.dataset import load_pairs, print_stats
 
 

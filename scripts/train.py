@@ -7,10 +7,14 @@ Usage:
     python scripts/train.py --config configs/baseline.yaml --subtask spa2mslg
 """
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import argparse
 import yaml
 import numpy as np
-from pathlib import Path
 from sklearn.model_selection import train_test_split
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, DataCollatorForSeq2Seq
 import evaluate

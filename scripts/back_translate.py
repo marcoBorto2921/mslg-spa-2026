@@ -20,10 +20,14 @@ Round-trip filtering:
     Keep pair if chrF(original SPA, reconstructed SPA) > threshold
 """
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import argparse
 import yaml
 import pandas as pd
-from pathlib import Path
 from tqdm import tqdm
 
 from src.data.dataset import load_pairs

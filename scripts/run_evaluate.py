@@ -7,9 +7,13 @@ Usage:
     python scripts/evaluate.py --config configs/baseline.yaml --subtask spa2mslg
 """
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import argparse
 import yaml
-from pathlib import Path
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from peft import PeftModel
 import torch
