@@ -16,7 +16,7 @@ import argparse
 import yaml
 import numpy as np
 from sklearn.model_selection import train_test_split
-from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, DataCollatorForSeq2Seq
+from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, DataCollatorForSeq2Seq, EarlyStoppingCallback
 import evaluate
 
 from src.data.dataset import load_pairs, print_stats, TranslationDataset
@@ -182,6 +182,11 @@ def main():
     # ------------------------------------------------------------------ #
     # 6. Trainer
     # ------------------------------------------------------------------ #
+    callbacks = []
+    patience = config["training"].get("early_stopping_patience")
+    if patience:
+        callbacks.append(EarlyStoppingCallback(early_stopping_patience=patience))
+
     trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
@@ -190,6 +195,7 @@ def main():
         processing_class=tokenizer,
         data_collator=DataCollatorForSeq2Seq(tokenizer, model=model, padding=True),
         compute_metrics=make_compute_metrics(tokenizer, args.subtask),
+        callbacks=callbacks if callbacks else None,
     )
 
     # ------------------------------------------------------------------ #

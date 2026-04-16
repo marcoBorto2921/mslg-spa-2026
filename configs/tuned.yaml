@@ -49,6 +49,7 @@ training:
   seed: 42
   label_smoothing_factor: 0.1
   eval_with_beam_search: true
+  early_stopping_patience: 5
 
 # Generation
 generation:
