@@ -1,0 +1,63 @@
+# EXP-004 — Back-translation 4x oversample on top of tuned config
+#
+# Changes vs tuned.yaml:
+#   train_file: MSLG_SPA_train.txt → data/processed/augmented_train.tsv
+#   output_dir: checkpoints/tuned → checkpoints/tuned_bt
+#
+# All other hyperparameters identical to tuned.yaml (the stable baseline).
+# Run back_translate.py first to generate augmented_train.tsv.
+
+# Model configuration
+model:
+  name: "facebook/mbart-large-50"
+  max_source_length: 128
+  max_target_length: 128
+
+# LoRA — unchanged from tuned (r=16 is correct for this dataset size)
+lora:
+  enabled: true
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.1
+  target_modules: ["q_proj", "v_proj"]
+
+# Data paths — augmented file
+data:
+  train_file: "data/processed/augmented_train.tsv"
+  test_mslg2spa: "data/raw/MSLG2SPA_test.txt"
+  test_spa2mslg: "data/raw/SPA2MSLG_test.txt"
+  processed_dir: "data/processed/"
+  val_split: 0.15
+
+# Training
+training:
+  output_dir: "checkpoints/tuned_bt"
+  num_train_epochs: 40
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 16
+  learning_rate: 1.0e-4
+  warmup_steps: 100
+  weight_decay: 0.01
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  load_best_model_at_end: true
+  metric_for_best_model: "chrf"
+  greater_is_better: true
+  fp16: true
+  seed: 42
+  label_smoothing_factor: 0.0
+  eval_with_beam_search: true
+  early_stopping_patience: 5
+  max_grad_norm: 0.3
+
+# Generation
+generation:
+  num_beams: 5
+  max_new_tokens: 128
+  length_penalty: 1.0
+  no_repeat_ngram_size: 0
+
+# Logging
+logging:
+  report_to: "none"
+  logging_steps: 10
