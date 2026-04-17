@@ -161,6 +161,7 @@ def main():
         eval_strategy=config["training"]["eval_strategy"],
         save_strategy=config["training"]["save_strategy"],
         load_best_model_at_end=config["training"]["load_best_model_at_end"],
+        save_total_limit=config["training"].get("save_total_limit", 1),
         metric_for_best_model=config["training"]["metric_for_best_model"],
         greater_is_better=config["training"]["greater_is_better"],
         predict_with_generate=True,  # needed for seq2seq evaluation
