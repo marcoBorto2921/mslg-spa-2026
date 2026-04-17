@@ -37,9 +37,10 @@ class BestModelCallback(TrainerCallback):
     This avoids relying on state.best_model_checkpoint timing inside the Trainer.
     """
 
-    def __init__(self, metric_name: str, drive_ckpt_dir: str | None = None) -> None:
+    def __init__(self, metric_name: str, drive_ckpt_dir: str | None = None, subtask: str = "") -> None:
         self.metric_name = metric_name
         self.drive_ckpt_dir = Path(drive_ckpt_dir) if drive_ckpt_dir else None
+        self.subtask = subtask
         self.best_score: float = -float("inf")
         self._pending_backup: bool = False
 
@@ -60,15 +61,13 @@ class BestModelCallback(TrainerCallback):
         if not self._pending_backup or self.drive_ckpt_dir is None:
             return
         self._pending_backup = False
-        if state.best_model_checkpoint is None:
-            return
         import shutil
 
-        src = Path(state.best_model_checkpoint)
+        src = Path(args.output_dir) / f"checkpoint-{state.global_step}"
         if not src.exists():
             return
-        # Preserve subtask subfolder: DRIVE_CKPT/mslg2spa/checkpoint-N
-        dst = self.drive_ckpt_dir / src.parent.name / src.name
+        # Subtask-scoped Drive path: DRIVE_CKPT/mslg2spa/checkpoint-N
+        dst = self.drive_ckpt_dir / self.subtask / src.name
         dst.parent.mkdir(parents=True, exist_ok=True)
         if dst.exists():
             shutil.rmtree(dst)
@@ -249,7 +248,7 @@ def main():
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=patience))
     callbacks.append(
         BestModelCallback(
-            config["training"]["metric_for_best_model"], args.drive_ckpt_dir
+            config["training"]["metric_for_best_model"], args.drive_ckpt_dir, args.subtask
         )
     )
 
@@ -271,7 +270,7 @@ def main():
     trainer.train()
 
     # Save final model
-    output_dir = Path(config["training"]["output_dir"])
+    output_dir = Path(config["training"]["output_dir"]) / args.subtask
     trainer.save_model(output_dir / "final")
     tokenizer.save_pretrained(output_dir / "final")
     print(f"\nModel saved to {output_dir / 'final'}")
