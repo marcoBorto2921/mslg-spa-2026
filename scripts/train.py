@@ -67,11 +67,13 @@ class BestModelCallback(TrainerCallback):
         src = Path(state.best_model_checkpoint)
         if not src.exists():
             return
-        dst = self.drive_ckpt_dir / src.name
+        # Preserve subtask subfolder: DRIVE_CKPT/mslg2spa/checkpoint-N
+        dst = self.drive_ckpt_dir / src.parent.name / src.name
+        dst.parent.mkdir(parents=True, exist_ok=True)
         if dst.exists():
             shutil.rmtree(dst)
         shutil.copytree(src, dst)
-        print(f"  [Drive backup] {src.name} → {dst}")
+        print(f"  [Drive backup] {src.parent.name}/{src.name} → {dst}")
 
 
 def parse_args():
@@ -199,8 +201,11 @@ def main():
     # ------------------------------------------------------------------ #
     # 5. Training arguments
     # ------------------------------------------------------------------ #
+    # Append subtask name so mslg2spa and spa2mslg don't overwrite each other
+    subtask_output_dir = str(Path(config["training"]["output_dir"]) / args.subtask)
+
     training_args = Seq2SeqTrainingArguments(
-        output_dir=config["training"]["output_dir"],
+        output_dir=subtask_output_dir,
         num_train_epochs=config["training"]["num_train_epochs"],
         per_device_train_batch_size=config["training"]["per_device_train_batch_size"],
         per_device_eval_batch_size=config["training"]["per_device_eval_batch_size"],
