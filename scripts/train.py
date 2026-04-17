@@ -37,7 +37,9 @@ class BestModelCallback(TrainerCallback):
     This avoids relying on state.best_model_checkpoint timing inside the Trainer.
     """
 
-    def __init__(self, metric_name: str, drive_ckpt_dir: str | None = None, subtask: str = "") -> None:
+    def __init__(
+        self, metric_name: str, drive_ckpt_dir: str | None = None, subtask: str = ""
+    ) -> None:
         self.metric_name = metric_name
         self.drive_ckpt_dir = Path(drive_ckpt_dir) if drive_ckpt_dir else None
         self.subtask = subtask
@@ -58,13 +60,17 @@ class BestModelCallback(TrainerCallback):
 
     def on_save(self, args, state, control, **kwargs) -> None:
         """Triggered right after the Trainer writes a checkpoint to disk."""
-        if not self._pending_backup or self.drive_ckpt_dir is None:
+        if not self._pending_backup:
+            return
+        if self.drive_ckpt_dir is None:
+            print("  [Drive backup] SKIPPED — --drive_ckpt_dir not set")
             return
         self._pending_backup = False
         import shutil
 
         src = Path(args.output_dir) / f"checkpoint-{state.global_step}"
         if not src.exists():
+            print(f"  [Drive backup] SKIPPED — checkpoint not found at {src.resolve()}")
             return
         # Subtask-scoped Drive path: DRIVE_CKPT/mslg2spa/checkpoint-N
         dst = self.drive_ckpt_dir / self.subtask / src.name
@@ -248,7 +254,9 @@ def main():
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=patience))
     callbacks.append(
         BestModelCallback(
-            config["training"]["metric_for_best_model"], args.drive_ckpt_dir, args.subtask
+            config["training"]["metric_for_best_model"],
+            args.drive_ckpt_dir,
+            args.subtask,
         )
     )
 
