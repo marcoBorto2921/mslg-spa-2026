@@ -29,17 +29,36 @@ from src.models.seq2seq import load_model_and_tokenizer
 
 
 class BestModelCallback(TrainerCallback):
-    """Prints a message on new best and immediately backs up the checkpoint to Drive."""
+    """Prints a message on new best and immediately backs up the checkpoint to Drive.
+
+    Uses a _pending_backup flag set in on_evaluate (where we detect the new best)
+    and consumed in on_save (where the checkpoint is guaranteed to be on disk).
+    This avoids relying on state.best_model_checkpoint timing inside the Trainer.
+    """
 
     def __init__(self, metric_name: str, drive_ckpt_dir: str | None = None) -> None:
         self.metric_name = metric_name
         self.drive_ckpt_dir = Path(drive_ckpt_dir) if drive_ckpt_dir else None
         self.best_score: float = -float("inf")
+        self._pending_backup: bool = False
+
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs) -> None:
+        if metrics is None:
+            return
+        score = metrics.get(f"eval_{self.metric_name}")
+        if score is not None and score > self.best_score:
+            self.best_score = score
+            self._pending_backup = True
+            print(
+                f"\n*** NEW BEST — epoch {metrics.get('epoch', '?'):.1f} | "
+                f"{self.metric_name} = {score:.4f} *** checkpoint saved\n"
+            )
 
     def on_save(self, args, state, control, **kwargs) -> None:
-        """Triggered right after the Trainer saves a checkpoint."""
-        if self.drive_ckpt_dir is None:
+        """Triggered right after the Trainer writes a checkpoint to disk."""
+        if not self._pending_backup or self.drive_ckpt_dir is None:
             return
+        self._pending_backup = False
         if state.best_model_checkpoint is None:
             return
         import shutil
@@ -52,18 +71,6 @@ class BestModelCallback(TrainerCallback):
             shutil.rmtree(dst)
         shutil.copytree(src, dst)
         print(f"  [Drive backup] {src.name} → {dst}")
-
-    def on_evaluate(self, args, state, control, metrics=None, **kwargs) -> None:
-        if metrics is None:
-            return
-        key = f"eval_{self.metric_name}"
-        score = metrics.get(key)
-        if score is not None and score > self.best_score:
-            self.best_score = score
-            print(
-                f"\n*** NEW BEST — epoch {metrics.get('epoch', '?'):.1f} | "
-                f"{self.metric_name} = {score:.4f} *** checkpoint saved\n"
-            )
 
 
 def parse_args():
