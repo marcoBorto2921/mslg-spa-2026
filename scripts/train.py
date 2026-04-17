@@ -28,6 +28,26 @@ from src.data.dataset import load_pairs, print_stats, TranslationDataset
 from src.models.seq2seq import load_model_and_tokenizer
 
 
+class BestModelCallback(TrainerCallback):
+    """Prints a visible message whenever a new best checkpoint is saved."""
+
+    def __init__(self, metric_name: str) -> None:
+        self.metric_name = metric_name
+        self.best_score: float = -float("inf")
+
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs) -> None:
+        if metrics is None:
+            return
+        key = f"eval_{self.metric_name}"
+        score = metrics.get(key)
+        if score is not None and score > self.best_score:
+            self.best_score = score
+            print(
+                f"\n*** NEW BEST — epoch {metrics.get('epoch', '?'):.1f} | "
+                f"{self.metric_name} = {score:.4f} *** checkpoint saved\n"
+            )
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="Path to YAML config file")
@@ -193,6 +213,7 @@ def main():
     patience = config["training"].get("early_stopping_patience")
     if patience:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=patience))
+    callbacks.append(BestModelCallback(config["training"]["metric_for_best_model"]))
 
     trainer = Seq2SeqTrainer(
         model=model,
