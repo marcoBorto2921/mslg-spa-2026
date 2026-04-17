@@ -21,6 +21,7 @@ from transformers import (
     Seq2SeqTrainingArguments,
     DataCollatorForSeq2Seq,
     EarlyStoppingCallback,
+    TrainerCallback,
 )
 import evaluate
 
