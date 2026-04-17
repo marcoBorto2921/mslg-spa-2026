@@ -29,11 +29,29 @@ from src.models.seq2seq import load_model_and_tokenizer
 
 
 class BestModelCallback(TrainerCallback):
-    """Prints a visible message whenever a new best checkpoint is saved."""
+    """Prints a message on new best and immediately backs up the checkpoint to Drive."""
 
-    def __init__(self, metric_name: str) -> None:
+    def __init__(self, metric_name: str, drive_ckpt_dir: str | None = None) -> None:
         self.metric_name = metric_name
+        self.drive_ckpt_dir = Path(drive_ckpt_dir) if drive_ckpt_dir else None
         self.best_score: float = -float("inf")
+
+    def on_save(self, args, state, control, **kwargs) -> None:
+        """Triggered right after the Trainer saves a checkpoint."""
+        if self.drive_ckpt_dir is None:
+            return
+        if state.best_model_checkpoint is None:
+            return
+        import shutil
+
+        src = Path(state.best_model_checkpoint)
+        if not src.exists():
+            return
+        dst = self.drive_ckpt_dir / src.name
+        if dst.exists():
+            shutil.rmtree(dst)
+        shutil.copytree(src, dst)
+        print(f"  [Drive backup] {src.name} → {dst}")
 
     def on_evaluate(self, args, state, control, metrics=None, **kwargs) -> None:
         if metrics is None:
@@ -52,6 +70,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="Path to YAML config file")
     parser.add_argument("--subtask", required=True, choices=["mslg2spa", "spa2mslg"])
+    parser.add_argument(
+        "--drive_ckpt_dir", default=None, help="Drive checkpoint dir for live backup"
+    )
     return parser.parse_args()
 
 
@@ -213,7 +234,11 @@ def main():
     patience = config["training"].get("early_stopping_patience")
     if patience:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=patience))
-    callbacks.append(BestModelCallback(config["training"]["metric_for_best_model"]))
+    callbacks.append(
+        BestModelCallback(
+            config["training"]["metric_for_best_model"], args.drive_ckpt_dir
+        )
+    )
 
     trainer = Seq2SeqTrainer(
         model=model,
