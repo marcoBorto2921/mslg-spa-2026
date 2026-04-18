@@ -25,10 +25,12 @@ from scripts.run_evaluate import load_trained_model, generate_translations
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config",   required=True)
-    parser.add_argument("--subtask",  required=True, choices=["mslg2spa", "spa2mslg"])
-    parser.add_argument("--team",     required=True, help="Your team name")
-    parser.add_argument("--solution", required=True, help="Solution name (e.g. baseline, lora_r32)")
+    parser.add_argument("--config", required=True)
+    parser.add_argument("--subtask", required=True, choices=["mslg2spa", "spa2mslg"])
+    parser.add_argument("--team", required=True, help="Your team name")
+    parser.add_argument(
+        "--solution", required=True, help="Solution name (e.g. baseline, lora_r32)"
+    )
     return parser.parse_args()
 
 
@@ -64,7 +66,7 @@ def write_submission(
 
 
 def main():
-    args   = parse_args()
+    args = parse_args()
     config = load_config(args.config)
 
     # ------------------------------------------------------------------ #
@@ -72,15 +74,16 @@ def main():
     # ------------------------------------------------------------------ #
     if args.subtask == "mslg2spa":
         test_file = config["data"]["test_mslg2spa"]
-        src_col   = "mslg"
+        src_col = "mslg"
     else:
         test_file = config["data"]["test_spa2mslg"]
-        src_col   = "spa"
+        src_col = "spa"
 
     import pandas as pd
-    raw_df  = pd.read_csv(test_file, sep="\t", header=0, encoding="utf-8")
-    ids     = raw_df["ID"].tolist()
-    df      = load_pairs(test_file)
+
+    raw_df = pd.read_csv(test_file, sep="\t", header=0, encoding="utf-8")
+    ids = raw_df["ID"].tolist()
+    df = load_pairs(test_file)
     sources = df[src_col].tolist()
 
     print(f"Loaded {len(sources)} test instances for {args.subtask}")
@@ -88,7 +91,7 @@ def main():
     # ------------------------------------------------------------------ #
     # 2. Load trained model
     # ------------------------------------------------------------------ #
-    checkpoint_dir   = Path(config["training"]["output_dir"]) / "final"
+    checkpoint_dir = Path(config["training"]["output_dir"]) / args.subtask / "final"
     model, tokenizer = load_trained_model(str(checkpoint_dir))
 
     # ------------------------------------------------------------------ #
@@ -111,7 +114,7 @@ def main():
     # 4. Write submission file
     # ------------------------------------------------------------------ #
     # Official naming convention: TeamName_SolutionName_SUBTASK.txt
-    filename    = f"{args.team}_{args.solution}_{args.subtask.upper()}.txt"
+    filename = f"{args.team}_{args.solution}_{args.subtask.upper()}.txt"
     output_path = Path("outputs") / filename
     output_path.parent.mkdir(exist_ok=True)
 
