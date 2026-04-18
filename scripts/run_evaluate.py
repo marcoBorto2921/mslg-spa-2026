@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
 import yaml
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM
 from peft import PeftModel
 import torch
 
@@ -24,7 +24,7 @@ from src.evaluation.metrics import evaluate_subtask
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config",  required=True)
+    parser.add_argument("--config", required=True)
     parser.add_argument("--subtask", required=True, choices=["mslg2spa", "spa2mslg"])
     return parser.parse_args()
 
@@ -36,8 +36,9 @@ def load_config(path: str) -> dict:
 
 def load_trained_model(checkpoint_dir: str):
     from transformers import MBart50Tokenizer
+
     checkpoint_dir = Path(checkpoint_dir)
-    
+
     # Load tokenizer from base model — local checkpoint may lack tokenizer files
     tokenizer = MBart50Tokenizer.from_pretrained("facebook/mbart-large-50")
     # mBART-50 requires src_lang/tgt_lang for text_target tokenization
@@ -46,23 +47,20 @@ def load_trained_model(checkpoint_dir: str):
 
     if (checkpoint_dir / "adapter_config.json").exists():
         import json
+
         adapter_config = json.load(open(checkpoint_dir / "adapter_config.json"))
         base_model_name = adapter_config["base_model_name_or_path"]
 
         base_model = AutoModelForSeq2SeqLM.from_pretrained(
-            base_model_name,
-            local_files_only=False
+            base_model_name, local_files_only=False
         )
         model = PeftModel.from_pretrained(
-            base_model,
-            str(checkpoint_dir),
-            local_files_only=False
+            base_model, str(checkpoint_dir), local_files_only=False
         )
         model = model.merge_and_unload()
     else:
         model = AutoModelForSeq2SeqLM.from_pretrained(
-            str(checkpoint_dir),
-            local_files_only=False
+            str(checkpoint_dir), local_files_only=False
         )
     model.eval()
     return model, tokenizer
@@ -136,7 +134,7 @@ def generate_translations(
 
 
 def main():
-    args   = parse_args()
+    args = parse_args()
     config = load_config(args.config)
 
     # ------------------------------------------------------------------ #
@@ -150,7 +148,7 @@ def main():
         src_col, tgt_col = "spa", "mslg"
 
     df = load_pairs(test_file)
-    sources    = df[src_col].tolist()
+    sources = df[src_col].tolist()
     references = df[tgt_col].tolist()
 
     print(f"Loaded {len(df)} test pairs for {args.subtask}")
@@ -158,7 +156,7 @@ def main():
     # ------------------------------------------------------------------ #
     # 2. Load trained model
     # ------------------------------------------------------------------ #
-    checkpoint_dir = Path(config["training"]["output_dir"]) / "final"
+    checkpoint_dir = Path(config["training"]["output_dir"]) / args.subtask / "final"
     model, tokenizer = load_trained_model(str(checkpoint_dir))
     print(f"Loaded model from {checkpoint_dir}")
 
