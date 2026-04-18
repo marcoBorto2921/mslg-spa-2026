@@ -9,9 +9,9 @@ Pipeline:
 
 Usage:
     python scripts/back_translate.py \
-        --config configs/tuned.yaml \
-        --spa2mslg_checkpoint checkpoints/tuned/final \
-        --mslg2spa_checkpoint checkpoints/tuned/final \
+        --config configs/baseline.yaml \
+        --spa2mslg_checkpoint checkpoints/baseline/spa2mslg/final \
+        --mslg2spa_checkpoint checkpoints/baseline/mslg2spa/final \
         --output data/processed/augmented_train.tsv \
         --extract_from_train \
         --round_trip_threshold 0.0
