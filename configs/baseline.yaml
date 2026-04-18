@@ -34,7 +34,7 @@ training:
   eval_strategy: "epoch"
   save_strategy: "epoch"
   load_best_model_at_end: true
-  save_total_limit: 2
+  save_total_limit: 3
   early_stopping_patience: 10
   metric_for_best_model: "chrf"
   greater_is_better: true
