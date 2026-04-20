@@ -26,6 +26,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     parser.add_argument("--subtask", required=True, choices=["mslg2spa", "spa2mslg"])
+    parser.add_argument(
+        "--comet",
+        action="store_true",
+        help="Compute COMET (mslg2spa only). Requires unbabel-comet.",
+    )
     return parser.parse_args()
 
 
@@ -184,6 +189,7 @@ def main():
         predictions=predictions,
         references=references,
         subtask=args.subtask,
+        include_comet=args.comet,
     )
 
 
