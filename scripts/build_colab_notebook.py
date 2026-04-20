@@ -1,14 +1,13 @@
 """
 Build notebooks/colab_training.ipynb for MSLG-SPA 2026.
 
-Self-contained notebook that:
+Notebook structure:
   1. Checks GPU, mounts Drive, installs deps
-  2. Writes all source files inline via %%writefile (from current repo state)
-  3. Copies training data (and optional test set) from Drive to /content/ RAM
-  4. Restores any existing HuggingFace-style checkpoints from Drive -> local
-  5. Trains baseline or strong config for either subtask
-  6. Backs up checkpoints to Drive
-  7. Generates submission files (single-model and ensemble)
+  2. git clone / git pull from GitHub (no inline %%writefile)
+  3. Copies training data from Drive to /content/ RAM
+  4. Restores checkpoints from Drive -> local
+  5. Training
+  6. Submission generation (baseline, baseline_bt, ensemble)
 
 Run locally: `python scripts/build_colab_notebook.py`
 Output:      notebooks/colab_training.ipynb
@@ -19,20 +18,6 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-
-SOURCE_FILES = [
-    "src/data/dataset.py",
-    "src/data/preprocessing.py",
-    "src/models/seq2seq.py",
-    "src/evaluation/metrics.py",
-    "scripts/train.py",
-    "scripts/run_evaluate.py",
-    "scripts/predict.py",
-    "scripts/ensemble_predict.py",
-    "configs/baseline.yaml",
-    "configs/strong.yaml",
-    "configs/baseline_bt.yaml",
-]
 
 
 def md(text: str) -> dict:
@@ -70,7 +55,7 @@ def build_cells() -> list:
             "\n"
             "**Task:** IberLEF 2026 MSLG-SPA shared task\n"
             "**Model:** mBART-large-50 + LoRA\n"
-            "**Metrics (official):** BLEU + TER + chrF\n"
+            "**Metrics (official):** BLEU + METEOR + chrF (+ COMET for MSLG2SPA)\n"
             "**System output deadline:** 2026-04-30\n"
             "\n"
             "---\n"
@@ -158,47 +143,40 @@ def build_cells() -> list:
         )
     )
 
-    # ---- Section 2: write source files --------------------------------
+    # ---- Section 2: clone / pull repo ---------------------------------
     cells.append(
         md(
-            "## 2 - Project source files\n"
+            "## 2 - Clone / update repo\n"
             "\n"
-            "Source files are written inline via `%%writefile` from the current repo state.\n"
-            "To update the notebook after editing any source file, re-run `scripts/build_colab_notebook.py`.\n"
+            "Clones the repo on first run, pulls the latest code on subsequent runs.\n"
+            "All source files come from GitHub — no inline `%%writefile` needed.\n"
         )
     )
 
     cells.append(
         code(
-            "# 2.0 - Directory structure\n"
+            "# 2.1 - Clone or pull repo\n"
+            "import os\n"
             "from pathlib import Path\n"
             "\n"
             'PROJECT_ROOT = Path("/content/mslg-spa-2026")\n'
-            "for d in [\n"
-            '    "src/data",\n'
-            '    "src/models",\n'
-            '    "src/evaluation",\n'
-            '    "src/training",\n'
-            '    "scripts",\n'
-            '    "configs",\n'
-            '    "data/raw",\n'
-            '    "data/processed",\n'
-            '    "checkpoints",\n'
-            '    "outputs",\n'
-            "]:\n"
+            "\n"
+            "if PROJECT_ROOT.exists():\n"
+            "    print('Repo exists — pulling latest...')\n"
+            "    !git -C {PROJECT_ROOT} pull\n"
+            "else:\n"
+            "    print('Cloning repo...')\n"
+            "    !git clone https://github.com/marcoBorto2921/mslg-spa-2026.git {PROJECT_ROOT}\n"
+            "\n"
+            "# Create dirs not tracked by git (empty dirs)\n"
+            'for d in ["data/raw", "data/processed", "checkpoints", "outputs"]:\n'
             "    (PROJECT_ROOT / d).mkdir(parents=True, exist_ok=True)\n"
             "\n"
-            'for pkg in ["src", "src/data", "src/models", "src/evaluation", "src/training", "scripts"]:\n'
-            '    init = PROJECT_ROOT / pkg / "__init__.py"\n'
-            "    if not init.exists():\n"
-            '        init.write_text("")\n'
-            "\n"
-            'print(f"Directory structure created at {PROJECT_ROOT}")\n'
+            "import sys\n"
+            "sys.path.insert(0, str(PROJECT_ROOT))\n"
+            'print(f"Project root: {PROJECT_ROOT}")\n'
         )
     )
-
-    for src in SOURCE_FILES:
-        cells.append(writefile_cell(src))
 
     # ---- Section 3: data setup ---------------------------------------
     cells.append(
