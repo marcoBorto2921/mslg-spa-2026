@@ -144,7 +144,8 @@ def build_cells() -> list:
     cells.append(
         code(
             "# 1.3 - Install packages (transformers/peft stack)\n"
-            "# Colab has torch, numpy, pandas, sklearn, pyyaml already.\n"
+            "# Pin numpy<2.0 first to avoid ABI mismatch with unbabel-comet C extensions.\n"
+            '!pip install -q "numpy<2.0"\n'
             "!pip install -q transformers==4.46.0 peft==0.13.2 sentencepiece==0.2.0 \\\n"
             "    sacrebleu==2.4.3 evaluate==0.4.3 nltk==3.9.1 \\\n"
             "    unbabel-comet==2.2.4\n"
