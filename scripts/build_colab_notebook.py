@@ -350,7 +350,7 @@ def build_cells() -> list:
             "# ============================================================\n"
             "#  EDIT HERE\n"
             "# ============================================================\n"
-            'CONFIG_NAME = "baseline_bt.yaml"  # or "baseline.yaml" / "strong.yaml"\n'
+            'CONFIG_NAME = "baseline.yaml"  # baseline (no BT) | "baseline_bt.yaml" (with BT) | "strong.yaml"\n'
             "# ============================================================\n"
             "\n"
             'CONFIG_PATH = f"configs/{CONFIG_NAME}"\n'
@@ -374,7 +374,8 @@ def build_cells() -> list:
             "import os\n"
             "os.chdir(str(PROJECT_ROOT))\n"
             "\n"
-            "!python scripts/train.py --config {CONFIG_PATH} --subtask mslg2spa\n"
+            "!python scripts/train.py --config {CONFIG_PATH} --subtask mslg2spa \\\n"
+            "    --drive_ckpt_dir {DRIVE_CKPT}\n"
         )
     )
 
@@ -384,7 +385,8 @@ def build_cells() -> list:
             "import os\n"
             "os.chdir(str(PROJECT_ROOT))\n"
             "\n"
-            "!python scripts/train.py --config {CONFIG_PATH} --subtask spa2mslg\n"
+            "!python scripts/train.py --config {CONFIG_PATH} --subtask spa2mslg \\\n"
+            "    --drive_ckpt_dir {DRIVE_CKPT}\n"
         )
     )
 
