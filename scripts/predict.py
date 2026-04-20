@@ -44,22 +44,23 @@ def write_submission(
     output_path: Path,
     ids: list[int] | None = None,
 ) -> None:
-    """
-    Write predictions to a submission file.
+    """Write predictions in the official IberLEF submission format.
 
-    If IDs are provided, writes ID\\tprediction per line (matches test file structure).
-    Otherwise writes one plain prediction per line.
+    Official format (no ID):
+        "SystemOutput"\\n
 
-    NOTE: Official submission format not documented — using ID\\tprediction by default
-    to preserve alignment with the test set IDs.
+    Optional format (with instance ID for alignment verification):
+        "InstanceIdentifier"\\t"SystemOutput"\\n
+
+    Quotation marks are mandatory. Linux newlines required.
     """
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(output_path, "w", encoding="utf-8", newline="\n") as f:
         if ids is not None:
             for id_, pred in zip(ids, predictions):
-                f.write(f"{id_}\t{pred}\n")
+                f.write(f'"{id_}"\t"{pred}"\n')
         else:
             for pred in predictions:
-                f.write(f"{pred}\n")
+                f.write(f'"{pred}"\n')
 
     print(f"Submission saved to {output_path}")
     print(f"Lines written: {len(predictions)}")

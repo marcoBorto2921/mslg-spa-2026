@@ -187,7 +187,7 @@ def write_submission(predictions: list[str], output_path: Path) -> None:
 
     Each line: "SystemOutput"\\n
     """
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(output_path, "w", encoding="utf-8", newline="\n") as f:
         for pred in predictions:
             f.write(f'"{pred}"\n')
     print(f"\nSubmission saved to {output_path}  ({len(predictions)} lines)")
