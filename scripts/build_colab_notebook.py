@@ -212,6 +212,7 @@ def build_cells() -> list:
             "\n"
             'copy_if_exists("MSLG_SPA_train.txt", required=True)\n'
             'copy_if_exists("external_spanish.txt", required=False)\n'
+            'copy_if_exists("augmented_train.tsv", required=False)  # pre-generated BT data (optional)\n'
             'has_test_m2s = copy_if_exists("test_mslg2spa.tsv", required=False)\n'
             'has_test_s2m = copy_if_exists("test_spa2mslg.tsv", required=False)\n'
             "\n"
@@ -311,6 +312,35 @@ def build_cells() -> list:
             "\n"
             "**Memory note** — `strong.yaml` has 34.6M trainable params. If you hit OOM on T4, lower "
             "`per_device_train_batch_size` in the config cell below to 4.\n"
+        )
+    )
+
+    cells.append(
+        code(
+            "# 5.0 - Generate back-translation data (skip if augmented_train.tsv already exists)\n"
+            "# Requires: baseline checkpoints restored in cell 4.0\n"
+            "import os\n"
+            "from pathlib import Path\n"
+            "\n"
+            "os.chdir(str(PROJECT_ROOT))\n"
+            'aug_dst = LOCAL_DATA / "augmented_train.tsv"\n'
+            "if aug_dst.exists():\n"
+            '    print(f"augmented_train.tsv already in LOCAL_DATA ({aug_dst}) — skipping generation.")\n'
+            "else:\n"
+            '    print("Generating back-translation data...")\n'
+            "    !python scripts/back_translate.py \\\n"
+            "        --config configs/baseline.yaml \\\n"
+            "        --spa2mslg_checkpoint checkpoints/baseline/spa2mslg/final \\\n"
+            "        --mslg2spa_checkpoint checkpoints/baseline/mslg2spa/final \\\n"
+            "        --extract_from_train \\\n"
+            "        --spa_file {LOCAL_DATA}/external_spanish.txt \\\n"
+            "        --output {aug_dst} \\\n"
+            "        --round_trip_threshold 0.0\n"
+            "    # Back up to Drive so it survives session resets\n"
+            "    if aug_dst.exists():\n"
+            "        import shutil\n"
+            "        shutil.copy2(aug_dst, DRIVE_DATA / aug_dst.name)\n"
+            '        print(f"Backed up augmented_train.tsv to Drive.")\n'
         )
     )
 

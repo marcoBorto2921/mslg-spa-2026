@@ -161,6 +161,18 @@ def main():
     # If an augmented file is provided, append synthetic pairs to train only
     aug_file = config["data"].get("train_file")
     if aug_file and aug_file != real_file:
+        if not Path(aug_file).exists():
+            raise FileNotFoundError(
+                f"Augmented training file not found: {aug_file}\n"
+                "Run back_translate.py first to generate it, or switch to baseline.yaml.\n"
+                "Example:\n"
+                "  python scripts/back_translate.py \\\n"
+                "    --config configs/baseline.yaml \\\n"
+                "    --spa2mslg_checkpoint checkpoints/baseline/spa2mslg/final \\\n"
+                "    --mslg2spa_checkpoint checkpoints/baseline/mslg2spa/final \\\n"
+                "    --extract_from_train --output data/processed/augmented_train.tsv \\\n"
+                "    --round_trip_threshold 0.0"
+            )
         aug_df = load_pairs(aug_file)
         synthetic_df = aug_df[~aug_df.index.isin(real_df.index)].copy()
         # real_df may not share index with aug_df; deduplicate by content instead
