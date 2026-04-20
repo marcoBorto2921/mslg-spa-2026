@@ -404,10 +404,16 @@ def build_cells() -> list:
     # ---- Section 6: evaluate / predict --------------------------------
     cells.append(
         md(
-            "## 6 - Evaluation and submission\n"
+            "## 6 - Submission\n"
             "\n"
-            "Runs `run_evaluate.py` if test files have references, or `predict.py` / `ensemble_predict.py` "
-            "for blind submission.\n"
+            "Generates **three submission sets** for both subtasks:\n"
+            "- **A** `baseline` — single-best model trained without back-translation\n"
+            "- **B** `baseline_bt` — single-best model trained with back-translated data\n"
+            "- **C** `baseline_bt_ensemble3` — top-3 checkpoint ensemble from the BT model\n"
+            "\n"
+            "Run cell 6.1 first (sets params), then 6.2–6.4 in any order. "
+            "Cell 6.5 is an optional val sanity check (no test labels needed). "
+            "Cell 6.6 copies everything to Drive.\n"
         )
     )
 
@@ -417,74 +423,90 @@ def build_cells() -> list:
             "# ============================================================\n"
             "#  EDIT HERE\n"
             "# ============================================================\n"
-            'TEAM_NAME     = "mslgTeam"         # your team name\n'
-            'SOLUTION_NAME = "baseline_bt"       # label for this submission\n'
-            "N_CHECKPOINTS = 3                    # for ensemble_predict\n"
+            'TEAM_NAME     = "mslgTeam"   # your team name\n'
+            "N_CHECKPOINTS = 3             # top-N for ensemble\n"
             "# ============================================================\n"
-            'print(f"Team     : {TEAM_NAME}")\n'
-            'print(f"Solution : {SOLUTION_NAME}")\n'
-        )
-    )
-
-    cells.append(
-        code(
-            "# 6.2 - Single-model submission (MSLG2SPA)\n"
-            "import os\n"
-            "os.chdir(str(PROJECT_ROOT))\n"
-            "!python scripts/predict.py --config {CONFIG_PATH} --subtask mslg2spa \\\n"
-            "    --team {TEAM_NAME} --solution {SOLUTION_NAME}\n"
-        )
-    )
-
-    cells.append(
-        code(
-            "# 6.3 - Single-model submission (SPA2MSLG)\n"
-            "import os\n"
-            "os.chdir(str(PROJECT_ROOT))\n"
-            "!python scripts/predict.py --config {CONFIG_PATH} --subtask spa2mslg \\\n"
-            "    --team {TEAM_NAME} --solution {SOLUTION_NAME}\n"
-        )
-    )
-
-    cells.append(
-        code(
-            "# 6.4 - Ensemble submission (top-N checkpoints)\n"
-            "# Point --checkpoint_dir at the subtask-specific folder. Baseline writes to\n"
-            "# checkpoints/baseline and strong writes to checkpoints/strong — both are shared\n"
-            "# between subtasks unless the config was split. If a per-subtask subfolder exists,\n"
-            "# prefer that one; otherwise use the config output_dir.\n"
             "import os, yaml\n"
             "os.chdir(str(PROJECT_ROOT))\n"
+            'print(f"Team          : {TEAM_NAME}")\n'
+            'print(f"N checkpoints : {N_CHECKPOINTS}")\n'
+        )
+    )
+
+    cells.append(
+        code(
+            "# 6.2 - Submission A: baseline (no BT) — single-best model\n"
+            "# Outputs: {TEAM_NAME}_baseline_MSLG2SPA.txt\n"
+            "#          {TEAM_NAME}_baseline_SPA2MSLG.txt\n"
+            "import os\n"
+            "os.chdir(str(PROJECT_ROOT))\n"
+            "!python scripts/predict.py --config configs/baseline.yaml \\\n"
+            "    --subtask mslg2spa --team {TEAM_NAME} --solution baseline\n"
+            "!python scripts/predict.py --config configs/baseline.yaml \\\n"
+            "    --subtask spa2mslg --team {TEAM_NAME} --solution baseline\n"
+        )
+    )
+
+    cells.append(
+        code(
+            "# 6.3 - Submission B: baseline_bt (with BT) — single-best model\n"
+            "# Outputs: {TEAM_NAME}_baseline_bt_MSLG2SPA.txt\n"
+            "#          {TEAM_NAME}_baseline_bt_SPA2MSLG.txt\n"
+            "import os\n"
+            "os.chdir(str(PROJECT_ROOT))\n"
+            "!python scripts/predict.py --config configs/baseline_bt.yaml \\\n"
+            "    --subtask mslg2spa --team {TEAM_NAME} --solution baseline_bt\n"
+            "!python scripts/predict.py --config configs/baseline_bt.yaml \\\n"
+            "    --subtask spa2mslg --team {TEAM_NAME} --solution baseline_bt\n"
+        )
+    )
+
+    cells.append(
+        code(
+            "# 6.4 - Submission C: baseline_bt top-3 ensemble\n"
+            "# Outputs: {TEAM_NAME}_baseline_bt_ensemble3_MSLG2SPA.txt\n"
+            "#          {TEAM_NAME}_baseline_bt_ensemble3_SPA2MSLG.txt\n"
+            "import os, yaml\n"
+            "os.chdir(str(PROJECT_ROOT))\n"
+            "with open('configs/baseline_bt.yaml') as f:\n"
+            "    _bt = yaml.safe_load(f)\n"
+            "_bt_base = _bt['training']['output_dir']\n"
+            'print(f"Checkpoint base: {_bt_base}")\n'
             "\n"
-            "with open(CONFIG_PATH) as f:\n"
-            "    _cfg = yaml.safe_load(f)\n"
-            'CKPT_DIR = _cfg["training"]["output_dir"]\n'
-            'print(f"Checkpoint dir: {CKPT_DIR}")\n'
-            "\n"
-            "!python scripts/ensemble_predict.py --config {CONFIG_PATH} --subtask mslg2spa \\\n"
-            "    --checkpoint_dir {CKPT_DIR} --team {TEAM_NAME} --solution {SOLUTION_NAME}_ensemble{N_CHECKPOINTS} \\\n"
+            "!python scripts/ensemble_predict.py --config configs/baseline_bt.yaml \\\n"
+            "    --subtask mslg2spa \\\n"
+            "    --checkpoint_dir {_bt_base}/mslg2spa \\\n"
+            "    --team {TEAM_NAME} --solution baseline_bt_ensemble{N_CHECKPOINTS} \\\n"
             "    --n_checkpoints {N_CHECKPOINTS}\n"
-            "!python scripts/ensemble_predict.py --config {CONFIG_PATH} --subtask spa2mslg \\\n"
-            "    --checkpoint_dir {CKPT_DIR} --team {TEAM_NAME} --solution {SOLUTION_NAME}_ensemble{N_CHECKPOINTS} \\\n"
+            "!python scripts/ensemble_predict.py --config configs/baseline_bt.yaml \\\n"
+            "    --subtask spa2mslg \\\n"
+            "    --checkpoint_dir {_bt_base}/spa2mslg \\\n"
+            "    --team {TEAM_NAME} --solution baseline_bt_ensemble{N_CHECKPOINTS} \\\n"
             "    --n_checkpoints {N_CHECKPOINTS}\n"
         )
     )
 
     cells.append(
         code(
-            "# 6.5 - Evaluate on val split (no test references needed) - ensemble vs single-best\n"
-            "# Optional sanity check before submission. Uses the same val split as training.\n"
+            "# 6.5 - Val sanity check: single-best vs ensemble on real val split\n"
+            "# No test labels needed. Compares chrF of single-best vs top-3 ensemble.\n"
+            "# Run this before deciding which submission to use.\n"
             "import os, yaml\n"
             "os.chdir(str(PROJECT_ROOT))\n"
+            "with open('configs/baseline_bt.yaml') as f:\n"
+            "    _bt = yaml.safe_load(f)\n"
+            "_bt_base = _bt['training']['output_dir']\n"
             "\n"
-            "with open(CONFIG_PATH) as f:\n"
-            "    _cfg = yaml.safe_load(f)\n"
-            'CKPT_DIR = _cfg["training"]["output_dir"]\n'
-            "\n"
-            "!python scripts/ensemble_predict.py --config {CONFIG_PATH} --subtask mslg2spa \\\n"
-            "    --checkpoint_dir {CKPT_DIR} --validate --n_checkpoints {N_CHECKPOINTS}\n"
-            "!python scripts/ensemble_predict.py --config {CONFIG_PATH} --subtask spa2mslg \\\n"
-            "    --checkpoint_dir {CKPT_DIR} --validate --n_checkpoints {N_CHECKPOINTS}\n"
+            'print("=== MSLG2SPA ===")\n'
+            "!python scripts/ensemble_predict.py --config configs/baseline_bt.yaml \\\n"
+            "    --subtask mslg2spa \\\n"
+            "    --checkpoint_dir {_bt_base}/mslg2spa \\\n"
+            "    --validate --n_checkpoints {N_CHECKPOINTS}\n"
+            'print("=== SPA2MSLG ===")\n'
+            "!python scripts/ensemble_predict.py --config configs/baseline_bt.yaml \\\n"
+            "    --subtask spa2mslg \\\n"
+            "    --checkpoint_dir {_bt_base}/spa2mslg \\\n"
+            "    --validate --n_checkpoints {N_CHECKPOINTS}\n"
         )
     )
 
@@ -499,10 +521,13 @@ def build_cells() -> list:
             "if not outputs_dir.exists() or not any(outputs_dir.iterdir()):\n"
             '    print("No outputs to upload.")\n'
             "else:\n"
-            '    for f in outputs_dir.glob("*.txt"):\n'
+            '    for f in sorted(outputs_dir.glob("*.txt")):\n'
             "        dest = DRIVE_SUB / f.name\n"
             "        shutil.copy2(f, dest)\n"
-            '        print(f"  copied to Drive: {dest}")\n'
+            '        print(f"  Drive: {dest.name}")\n'
+            "    print()\n"
+            '    print("Downloading all .txt files...")\n'
+            '    for f in sorted(outputs_dir.glob("*.txt")):\n'
             "        files.download(str(f))\n"
         )
     )
