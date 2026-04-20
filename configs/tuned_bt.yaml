@@ -24,6 +24,7 @@ lora:
 # Data paths — augmented file
 data:
   train_file: "data/processed/augmented_train.tsv"
+  real_train_file: "data/raw/MSLG_SPA_train.txt"   # val carved from real data only
   test_mslg2spa: "data/raw/MSLG2SPA_test.txt"
   test_spa2mslg: "data/raw/SPA2MSLG_test.txt"
   processed_dir: "data/processed/"

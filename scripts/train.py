@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import yaml
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from transformers import (
     Seq2SeqTrainer,
@@ -144,17 +145,34 @@ def main():
     # ------------------------------------------------------------------ #
     # 1. Load data
     # ------------------------------------------------------------------ #
-    df = load_pairs(config["data"]["train_file"])
-    print_stats(df, name="Training data")
+    # If real_train_file is set, carve val from real data only to avoid
+    # synthetic pairs leaking into validation (data integrity: val must be
+    # 100% real, regardless of whether train_file contains augmented data).
+    real_file = config["data"].get("real_train_file") or config["data"]["train_file"]
+    real_df = load_pairs(real_file)
+    print_stats(real_df, name="Real training data")
 
-    # Split into train / validation
     train_df, val_df = train_test_split(
-        df,
+        real_df,
         test_size=config["data"]["val_split"],
         random_state=config["training"]["seed"],
     )
-    print(f"\n  Train pairs: {len(train_df)}")
-    print(f"  Val pairs:   {len(val_df)}")
+
+    # If an augmented file is provided, append synthetic pairs to train only
+    aug_file = config["data"].get("train_file")
+    if aug_file and aug_file != real_file:
+        aug_df = load_pairs(aug_file)
+        synthetic_df = aug_df[~aug_df.index.isin(real_df.index)].copy()
+        # real_df may not share index with aug_df; deduplicate by content instead
+        real_set = set(zip(real_df.iloc[:, 0], real_df.iloc[:, 1]))
+        synthetic_df = aug_df[
+            ~aug_df.apply(lambda r: (r.iloc[0], r.iloc[1]) in real_set, axis=1)
+        ]
+        train_df = pd.concat([train_df, synthetic_df], ignore_index=True)
+        print(f"  Synthetic pairs appended to train: {len(synthetic_df)}")
+
+    print(f"\n  Train pairs (total): {len(train_df)}")
+    print(f"  Val pairs (real only): {len(val_df)}")
 
     # ------------------------------------------------------------------ #
     # 2. Load model and tokenizer
