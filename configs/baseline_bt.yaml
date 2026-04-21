@@ -30,7 +30,7 @@ data:
 
 training:
   output_dir: "checkpoints/baseline_bt"
-  num_train_epochs: 40
+  num_train_epochs: 60
   per_device_train_batch_size: 8
   per_device_eval_batch_size: 16
   learning_rate: 5.0e-4
