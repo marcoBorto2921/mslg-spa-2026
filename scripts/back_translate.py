@@ -77,6 +77,15 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Cap on total BT source sentences (default: all)",
     )
+    parser.add_argument(
+        "--direction",
+        choices=["spa2mslg", "mslg2spa"],
+        default="spa2mslg",
+        help=(
+            "spa2mslg (default): SPA→MSLG synthetic pairs, helps MSLG2SPA training.\n"
+            "mslg2spa: MSLG→SPA synthetic pairs, helps SPA2MSLG training."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -201,6 +210,24 @@ def main() -> None:
     max_src_len = config["model"]["max_source_length"]
     max_new_tokens = config["generation"]["max_new_tokens"]
     num_beams = config["generation"]["num_beams"]
+    real_train_file = (
+        config["data"].get("real_train_file") or config["data"]["train_file"]
+    )
+
+    if args.direction == "mslg2spa":
+        _run_reverse_bt(
+            args, config, max_src_len, max_new_tokens, num_beams, real_train_file
+        )
+    else:
+        _run_forward_bt(
+            args, config, max_src_len, max_new_tokens, num_beams, real_train_file
+        )
+
+
+def _run_forward_bt(
+    args, config, max_src_len, max_new_tokens, num_beams, real_train_file
+):
+    """SPA→MSLG: synthetic (mslg_synthetic, spa_real) pairs — helps MSLG2SPA training."""
     train_file = config["data"]["train_file"]
 
     # ------------------------------------------------------------------ #
@@ -271,7 +298,7 @@ def main() -> None:
     # 4. Combine with original training data and save
     # ------------------------------------------------------------------ #
     print("\n[4] Combining with original training data...")
-    original_df = load_pairs(train_file)
+    original_df = load_pairs(real_train_file)
     synthetic_df = pd.DataFrame(kept_pairs, columns=["mslg", "spa"])
 
     print(f"  Original pairs:  {len(original_df)}")
@@ -284,6 +311,69 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     augmented_df.to_csv(output_path, sep="\t", index=False)
     print(f"\nAugmented dataset saved to {output_path}")
+
+
+def _run_reverse_bt(
+    args, config, max_src_len, max_new_tokens, num_beams, real_train_file
+):
+    """MSLG→SPA: synthetic (mslg_real, spa_synthetic) pairs — helps SPA2MSLG training."""
+
+    # ------------------------------------------------------------------ #
+    # 1. Collect real MSLG glosses from training data
+    # ------------------------------------------------------------------ #
+    print("\n[1] Collecting real MSLG glosses from training data...")
+    original_df = load_pairs(real_train_file)
+    mslg_sentences = original_df["mslg"].tolist()
+    if args.max_sentences is not None:
+        mslg_sentences = mslg_sentences[: args.max_sentences]
+    print(f"  Total MSLG source sentences: {len(mslg_sentences)}")
+
+    # ------------------------------------------------------------------ #
+    # 2. Load MSLG2SPA model and generate synthetic Spanish
+    # ------------------------------------------------------------------ #
+    print("\n[2] Loading MSLG2SPA model...")
+    mslg2spa_model, mslg2spa_tokenizer = load_trained_model(args.mslg2spa_checkpoint)
+
+    print("Generating synthetic Spanish sentences...")
+    synthetic_spa = generate_translations(
+        model=mslg2spa_model,
+        tokenizer=mslg2spa_tokenizer,
+        sources=mslg_sentences,
+        subtask="mslg2spa",
+        max_src_len=max_src_len,
+        max_new_tokens=max_new_tokens,
+        num_beams=num_beams,
+    )
+
+    print(f"  Generated {len(synthetic_spa)} synthetic Spanish sentences")
+    print("\n  Examples:")
+    for gloss, spa in zip(mslg_sentences[:5], synthetic_spa[:5]):
+        print(f"    MSLG: {gloss}")
+        print(f"    SPA:  {spa}")
+        print()
+
+    # ------------------------------------------------------------------ #
+    # 3. Round-trip filter skipped for reverse BT (threshold always 0.0)
+    # ------------------------------------------------------------------ #
+    print("\n[3] Round-trip filter skipped for reverse BT — keeping all pairs")
+    kept_pairs = list(zip(mslg_sentences, synthetic_spa))  # (mslg_real, spa_synthetic)
+
+    # ------------------------------------------------------------------ #
+    # 4. Combine with original training data and save
+    # ------------------------------------------------------------------ #
+    print("\n[4] Combining with original training data...")
+    synthetic_df = pd.DataFrame(kept_pairs, columns=["mslg", "spa"])
+
+    print(f"  Original pairs:  {len(original_df)}")
+    print(f"  Synthetic pairs: {len(synthetic_df)}")
+
+    augmented_df = pd.concat([original_df, synthetic_df], ignore_index=True)
+    print(f"  Total augmented: {len(augmented_df)}")
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    augmented_df.to_csv(output_path, sep="\t", index=False)
+    print(f"\nReverse-BT augmented dataset saved to {output_path}")
 
 
 if __name__ == "__main__":

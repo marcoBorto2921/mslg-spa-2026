@@ -212,7 +212,8 @@ def build_cells() -> list:
             "\n"
             'copy_if_exists("MSLG_SPA_train.txt", required=True)\n'
             'copy_if_exists("external_spanish.txt", required=False)\n'
-            'copy_if_exists("augmented_train.tsv", required=False)  # pre-generated BT data (optional)\n'
+            'copy_if_exists("augmented_train.tsv", required=False)  # forward BT (SPA→MSLG synthetic)\n'
+            'copy_if_exists("augmented_train_reverse.tsv", required=False)  # reverse BT (MSLG→SPA synthetic)\n'
             'has_test_m2s = copy_if_exists("test_mslg2spa.tsv", required=False)\n'
             'has_test_s2m = copy_if_exists("test_spa2mslg.tsv", required=False)\n'
             "\n"
@@ -242,7 +243,7 @@ def build_cells() -> list:
             "        yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True, sort_keys=False)\n"
             '    print(f"Patched {cfg_name}")\n'
             "\n"
-            "# baseline_bt.yaml: patch both real_train_file (val) and train_file (augmented)\n"
+            "# baseline_bt.yaml: augmented_train.tsv (SPA→MSLG synthetic, for MSLG2SPA)\n"
             '_bt_cfg_name = "configs/baseline_bt.yaml"\n'
             "with open(_bt_cfg_name) as f:\n"
             "    _bt_cfg = yaml.safe_load(f)\n"
@@ -253,6 +254,18 @@ def build_cells() -> list:
             'with open(_bt_cfg_name, "w") as f:\n'
             "    yaml.dump(_bt_cfg, f, default_flow_style=False, allow_unicode=True, sort_keys=False)\n"
             'print(f"Patched {_bt_cfg_name}")\n'
+            "\n"
+            "# baseline_bt_s2m.yaml: augmented_train_reverse.tsv (MSLG→SPA synthetic, for SPA2MSLG)\n"
+            '_s2m_cfg_name = "configs/baseline_bt_s2m.yaml"\n'
+            "with open(_s2m_cfg_name) as f:\n"
+            "    _s2m_cfg = yaml.safe_load(f)\n"
+            '_s2m_cfg["data"]["real_train_file"] = str(LOCAL_DATA / "MSLG_SPA_train.txt")\n'
+            '_s2m_cfg["data"]["train_file"]      = str(LOCAL_DATA / "augmented_train_reverse.tsv")\n'
+            '_s2m_cfg["data"]["test_mslg2spa"]   = str(LOCAL_DATA / "test_mslg2spa.tsv")\n'
+            '_s2m_cfg["data"]["test_spa2mslg"]   = str(LOCAL_DATA / "test_spa2mslg.tsv")\n'
+            'with open(_s2m_cfg_name, "w") as f:\n'
+            "    yaml.dump(_s2m_cfg, f, default_flow_style=False, allow_unicode=True, sort_keys=False)\n"
+            'print(f"Patched {_s2m_cfg_name}")\n'
             "\n"
             "# Quick sanity check on the training file\n"
             "from src.data.dataset import load_pairs, print_stats\n"
@@ -362,6 +375,24 @@ def build_cells() -> list:
             "    if aug_dst.exists():\n"
             "        shutil.copy2(aug_dst, DRIVE_DATA / aug_dst.name)\n"
             '        print("Backed up augmented_train.tsv to Drive.")\n'
+            "\n"
+            "# Reverse BT: MSLG→SPA synthetic pairs — helps SPA2MSLG training\n"
+            "# Uses the stronger baseline_bt MSLG2SPA model (train 5.4 first)\n"
+            'rev_dst = LOCAL_DATA / "augmented_train_reverse.tsv"\n'
+            "if rev_dst.exists():\n"
+            '    print("augmented_train_reverse.tsv already exists — skipping generation.")\n'
+            "else:\n"
+            '    print("Generating reverse back-translation data (MSLG→SPA)...")\n'
+            "    !python scripts/back_translate.py \\\n"
+            "        --config configs/baseline.yaml \\\n"
+            "        --mslg2spa_checkpoint checkpoints/baseline_bt/mslg2spa/final \\\n"
+            "        --spa2mslg_checkpoint checkpoints/baseline/spa2mslg/final \\\n"
+            "        --output {rev_dst} \\\n"
+            "        --direction mslg2spa \\\n"
+            "        --round_trip_threshold 0.0\n"
+            "    if rev_dst.exists():\n"
+            "        shutil.copy2(rev_dst, DRIVE_DATA / rev_dst.name)\n"
+            '        print("Backed up augmented_train_reverse.tsv to Drive.")\n'
         )
     )
 
@@ -381,18 +412,18 @@ def build_cells() -> list:
 
     cells.append(
         code(
-            "# 5.5 - Train SPA2MSLG — baseline + BT\n"
+            "# 5.5 - Train SPA2MSLG — baseline + reverse BT (MSLG→SPA synthetic)\n"
             "import os\n"
             "os.chdir(str(PROJECT_ROOT))\n"
             "\n"
-            "!python scripts/train.py --config configs/baseline_bt.yaml --subtask spa2mslg \\\n"
+            "!python scripts/train.py --config configs/baseline_bt_s2m.yaml --subtask spa2mslg \\\n"
             "    --drive_ckpt_dir {DRIVE_CKPT}\n"
         )
     )
 
     cells.append(
         code(
-            "# 5.4 - Backup all checkpoints to Drive\n"
+            "# 5.6 - Backup all checkpoints to Drive\n"
             "import shutil\n"
             "from pathlib import Path\n"
             "\n"
