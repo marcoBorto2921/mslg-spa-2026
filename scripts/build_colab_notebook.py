@@ -366,8 +366,8 @@ def build_cells() -> list:
             '    print("Generating back-translation data...")\n'
             "    !python scripts/back_translate.py \\\n"
             "        --config configs/baseline.yaml \\\n"
-            "        --spa2mslg_checkpoint checkpoints/baseline/spa2mslg/final \\\n"
-            "        --mslg2spa_checkpoint checkpoints/baseline/mslg2spa/final \\\n"
+            "        --spa2mslg_checkpoint {PROJECT_ROOT}/checkpoints/baseline/spa2mslg/final \\\n"
+            "        --mslg2spa_checkpoint {PROJECT_ROOT}/checkpoints/baseline/mslg2spa/final \\\n"
             "        --extract_from_train \\\n"
             "        --spa_file {LOCAL_DATA}/external_spanish.txt \\\n"
             "        --output {aug_dst} \\\n"
@@ -385,8 +385,8 @@ def build_cells() -> list:
             '    print("Generating reverse back-translation data (MSLG→SPA)...")\n'
             "    !python scripts/back_translate.py \\\n"
             "        --config configs/baseline.yaml \\\n"
-            "        --mslg2spa_checkpoint checkpoints/baseline_bt/mslg2spa/final \\\n"
-            "        --spa2mslg_checkpoint checkpoints/baseline/spa2mslg/final \\\n"
+            "        --mslg2spa_checkpoint {PROJECT_ROOT}/checkpoints/baseline_bt/mslg2spa/final \\\n"
+            "        --spa2mslg_checkpoint {PROJECT_ROOT}/checkpoints/baseline/spa2mslg/final \\\n"
             "        --output {rev_dst} \\\n"
             "        --direction mslg2spa \\\n"
             "        --round_trip_threshold 0.0\n"
