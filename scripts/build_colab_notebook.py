@@ -214,8 +214,19 @@ def build_cells() -> list:
             'copy_if_exists("external_spanish.txt", required=False)\n'
             'copy_if_exists("augmented_train.tsv", required=False)  # forward BT (SPA→MSLG synthetic)\n'
             'copy_if_exists("augmented_train_reverse.tsv", required=False)  # reverse BT (MSLG→SPA synthetic)\n'
-            'has_test_m2s = copy_if_exists("test_mslg2spa.tsv", required=False)\n'
-            'has_test_s2m = copy_if_exists("test_spa2mslg.tsv", required=False)\n'
+            "# Test files: try both naming conventions (lowercase .tsv or uppercase .txt)\n"
+            "def copy_test(candidates, dst_name):\n"
+            "    for name in candidates:\n"
+            "        src = DRIVE_DATA / name\n"
+            "        if src.exists():\n"
+            "            shutil.copy2(src, LOCAL_DATA / dst_name)\n"
+            '            print(f"  OK      {name} -> {dst_name}")\n'
+            "            return True\n"
+            '    print(f"  MISSING {candidates}  (optional — skipping)")\n'
+            "    return False\n"
+            "\n"
+            'has_test_m2s = copy_test(["test_mslg2spa.tsv", "MSLG2SPA_test.txt"], "test_mslg2spa.tsv")\n'
+            'has_test_s2m = copy_test(["test_spa2mslg.tsv", "SPA2MSLG_test.txt"], "test_spa2mslg.tsv")\n'
             "\n"
             "print()\n"
             "if not (has_test_m2s and has_test_s2m):\n"
