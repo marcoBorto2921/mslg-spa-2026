@@ -31,6 +31,11 @@ def parse_args():
     parser.add_argument(
         "--solution", required=True, help="Solution name (e.g. baseline, lora_r32)"
     )
+    parser.add_argument(
+        "--checkpoint_dir",
+        default=None,
+        help="Override checkpoint path (default: output_dir/subtask/final from config)",
+    )
     return parser.parse_args()
 
 
@@ -92,7 +97,10 @@ def main():
     # ------------------------------------------------------------------ #
     # 2. Load trained model
     # ------------------------------------------------------------------ #
-    checkpoint_dir = Path(config["training"]["output_dir"]) / args.subtask / "final"
+    if args.checkpoint_dir is not None:
+        checkpoint_dir = Path(args.checkpoint_dir)
+    else:
+        checkpoint_dir = Path(config["training"]["output_dir"]) / args.subtask / "final"
     model, tokenizer = load_trained_model(str(checkpoint_dir))
 
     # ------------------------------------------------------------------ #
