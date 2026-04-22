@@ -507,13 +507,13 @@ def build_cells() -> list:
             "# MSLG2SPA: baseline_bt.yaml      → checkpoints/baseline_bt/mslg2spa/final\n"
             "# SPA2MSLG: baseline_bt_s2m.yaml  → checkpoints/baseline_bt_s2m/spa2mslg/final\n"
             "# Outputs: {TEAM_NAME}_baseline_bt_MSLG2SPA.txt\n"
-            "#          {TEAM_NAME}_baseline_bt_s2m_SPA2MSLG.txt\n"
+            "#          {TEAM_NAME}_baseline_bt_SPA2MSLG.txt\n"
             "import os\n"
             "os.chdir(str(PROJECT_ROOT))\n"
             "!python scripts/predict.py --config configs/baseline_bt.yaml \\\n"
             "    --subtask mslg2spa --team {TEAM_NAME} --solution baseline_bt\n"
             "!python scripts/predict.py --config configs/baseline_bt_s2m.yaml \\\n"
-            "    --subtask spa2mslg --team {TEAM_NAME} --solution baseline_bt_s2m\n"
+            "    --subtask spa2mslg --team {TEAM_NAME} --solution baseline_bt\n"
         )
     )
 
