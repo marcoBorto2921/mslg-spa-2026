@@ -17,9 +17,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
-import yaml
 
 from src.data.dataset import load_pairs
+from src.utils import load_config, write_submission
 from scripts.run_evaluate import load_trained_model, generate_translations
 
 
@@ -37,38 +37,6 @@ def parse_args():
         help="Override checkpoint path (default: output_dir/subtask/final from config)",
     )
     return parser.parse_args()
-
-
-def load_config(path: str) -> dict:
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
-
-
-def write_submission(
-    predictions: list[str],
-    output_path: Path,
-    ids: list[int] | None = None,
-) -> None:
-    """Write predictions in the official IberLEF submission format.
-
-    Official format (no ID):
-        "SystemOutput"\\n
-
-    Optional format (with instance ID for alignment verification):
-        "InstanceIdentifier"\\t"SystemOutput"\\n
-
-    Quotation marks are mandatory. Linux newlines required.
-    """
-    with open(output_path, "w", encoding="utf-8", newline="\n") as f:
-        if ids is not None:
-            for id_, pred in zip(ids, predictions):
-                f.write(f'"{id_}"\t"{pred}"\n')
-        else:
-            for pred in predictions:
-                f.write(f'"{pred}"\n')
-
-    print(f"Submission saved to {output_path}")
-    print(f"Lines written: {len(predictions)}")
 
 
 def main():

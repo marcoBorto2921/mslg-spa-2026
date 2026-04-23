@@ -32,12 +32,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
 import json
-import yaml
 
 from sklearn.model_selection import train_test_split
 
 from src.data.dataset import load_pairs
 from src.evaluation.metrics import compute_chrf
+from src.utils import load_config, write_submission
 from scripts.run_evaluate import load_trained_model, generate_translations
 
 
@@ -77,11 +77,6 @@ def parse_args():
         parser.error("--team and --solution are required unless --validate is set")
 
     return args
-
-
-def load_config(path: str) -> dict:
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
 
 
 def find_top_checkpoints(checkpoint_dir: Path, n: int) -> list[Path]:
@@ -180,17 +175,6 @@ def self_consistency_vote(predictions_per_model: list[list[str]]) -> list[str]:
         best.append(candidates[scores.index(max(scores))])
 
     return best
-
-
-def write_submission(predictions: list[str], output_path: Path) -> None:
-    """Write predictions in the official IberLEF submission format.
-
-    Each line: "SystemOutput"\\n
-    """
-    with open(output_path, "w", encoding="utf-8", newline="\n") as f:
-        for pred in predictions:
-            f.write(f'"{pred}"\n')
-    print(f"\nSubmission saved to {output_path}  ({len(predictions)} lines)")
 
 
 def load_validation_sources_and_refs(

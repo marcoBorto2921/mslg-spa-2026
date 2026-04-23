@@ -72,16 +72,3 @@ def load_model_and_tokenizer(
         model.print_trainable_parameters()
 
     return model, tokenizer
-
-
-def count_parameters(model) -> dict[str, int]:
-    """
-    Return total and trainable parameter counts.
-    Useful to verify LoRA is working correctly.
-
-    Returns:
-        Dict with keys 'total' and 'trainable'.
-    """
-    total     = sum(p.numel() for p in model.parameters())
-    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    return {"total": total, "trainable": trainable}

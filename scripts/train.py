@@ -13,7 +13,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
-import yaml
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -28,6 +27,7 @@ import evaluate
 
 from src.data.dataset import load_pairs, print_stats, TranslationDataset
 from src.models.seq2seq import load_model_and_tokenizer
+from src.utils import load_config
 
 
 class BestModelCallback(TrainerCallback):
@@ -90,11 +90,6 @@ def parse_args():
         "--drive_ckpt_dir", default=None, help="Drive checkpoint dir for live backup"
     )
     return parser.parse_args()
-
-
-def load_config(path: str) -> dict:
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
 
 
 def make_compute_metrics(tokenizer, subtask):
@@ -174,7 +169,6 @@ def main():
                 "    --round_trip_threshold 0.0"
             )
         aug_df = load_pairs(aug_file)
-        synthetic_df = aug_df[~aug_df.index.isin(real_df.index)].copy()
         # real_df may not share index with aug_df; deduplicate by content instead
         real_set = set(zip(real_df.iloc[:, 0], real_df.iloc[:, 1]))
         synthetic_df = aug_df[

@@ -4,7 +4,6 @@ Unit tests for MSL gloss preprocessing functions.
 Run with: pytest tests/test_preprocessing.py -v
 """
 
-import pytest
 from src.data.preprocessing import (
     normalize_msl_glosses,
     apply_hyphen_token,
@@ -16,6 +15,7 @@ from src.data.preprocessing import (
 # ------------------------------------------------------------------ #
 # normalize_msl_glosses
 # ------------------------------------------------------------------ #
+
 
 def test_normalize_removes_dm_prefix():
     assert normalize_msl_glosses("dm-ISABEL TENER CORONA") == "ISABEL TENER CORONA"
@@ -51,6 +51,7 @@ def test_normalize_empty_string():
 # apply_hyphen_token
 # ------------------------------------------------------------------ #
 
+
 def test_apply_hyphen_token_replaces_hyphen():
     result = apply_hyphen_token("LICENCIA-DE-CONDUCIR")
     assert HYPHEN_TOKEN in result
@@ -69,6 +70,7 @@ def test_apply_hyphen_token_no_double_spaces():
 # ------------------------------------------------------------------ #
 # preprocess_gloss
 # ------------------------------------------------------------------ #
+
 
 def test_preprocess_gloss_both_enabled():
     text = "dm-ISABEL LICENCIA-DE-CONDUCIR"

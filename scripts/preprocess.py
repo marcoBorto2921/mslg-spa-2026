@@ -15,21 +15,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
-import yaml
 import pandas as pd
 
 from src.data.dataset import load_pairs, print_stats
+from src.utils import load_config
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     return parser.parse_args()
-
-
-def load_config(path: str) -> dict:
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
 
 
 def validate_pairs(df: pd.DataFrame) -> None:
@@ -46,8 +41,8 @@ def validate_pairs(df: pd.DataFrame) -> None:
         issues += 1
 
     # Check for very long sequences
-    long_mslg = (df['mslg'].str.split().str.len() > 50).sum()
-    long_spa  = (df['spa'].str.split().str.len() > 50).sum()
+    long_mslg = (df["mslg"].str.split().str.len() > 50).sum()
+    long_spa = (df["spa"].str.split().str.len() > 50).sum()
     if long_mslg > 0:
         print(f"[WARNING] {long_mslg} MSLG sequences longer than 50 tokens")
         issues += 1
@@ -56,9 +51,9 @@ def validate_pairs(df: pd.DataFrame) -> None:
         issues += 1
 
     # Check for mismatched lengths (very short gloss, very long spanish)
-    df['mslg_len'] = df['mslg'].str.split().str.len()
-    df['spa_len']  = df['spa'].str.split().str.len()
-    ratio = df['spa_len'] / df['mslg_len']
+    df["mslg_len"] = df["mslg"].str.split().str.len()
+    df["spa_len"] = df["spa"].str.split().str.len()
+    ratio = df["spa_len"] / df["mslg_len"]
     extreme = (ratio > 5).sum()
     if extreme > 0:
         print(f"[WARNING] {extreme} pairs with SPA/MSLG length ratio > 5")
@@ -69,7 +64,7 @@ def validate_pairs(df: pd.DataFrame) -> None:
 
 
 def main():
-    args   = parse_args()
+    args = parse_args()
     config = load_config(args.config)
 
     # Load raw data

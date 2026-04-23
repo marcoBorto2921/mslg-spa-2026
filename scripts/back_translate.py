@@ -31,10 +31,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
-import yaml
 import pandas as pd
 
 from src.data.dataset import load_pairs
+from src.utils import load_config
 from src.evaluation.metrics import compute_chrf
 from scripts.run_evaluate import load_trained_model, generate_translations
 
@@ -87,11 +87,6 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     return parser.parse_args()
-
-
-def load_config(path: str) -> dict:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
 
 
 def collect_spanish_sentences(

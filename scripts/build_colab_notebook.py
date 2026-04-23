@@ -38,13 +38,6 @@ def code(text: str) -> dict:
     }
 
 
-def writefile_cell(rel_path: str) -> dict:
-    """Produce a %%writefile cell for rel_path, using current repo content."""
-    content = (REPO / rel_path).read_text(encoding="utf-8")
-    header = f"%%writefile /content/mslg-spa-2026/{rel_path}\n"
-    return code(header + content)
-
-
 def build_cells() -> list:
     cells = []
 

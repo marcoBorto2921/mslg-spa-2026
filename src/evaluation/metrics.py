@@ -11,7 +11,6 @@ TER is NOT part of the official ranking — kept only as an optional diagnostic.
 """
 
 import evaluate
-import numpy as np
 
 
 def compute_bleu(predictions: list[str], references: list[str]) -> float:
@@ -153,45 +152,3 @@ def evaluate_subtask(
         print(f"  {k.upper():<10}: {v:.4f}{note}")
 
     return results
-
-
-def compute_global_score(
-    scores_per_system: list[dict[str, float]],
-    subtask: str,
-) -> list[float]:
-    """
-    Replicate the official IberLEF 2026 Global Score for internal ablations.
-
-    Official method: z-score normalize each metric across systems, then take
-    the arithmetic mean of the normalized scores.
-
-    Metrics used:
-      - MSLG2SPA: bleu, meteor, chrf, comet (if present)
-      - SPA2MSLG: bleu, meteor, chrf
-
-    Args:
-        scores_per_system: List of metric dicts, one per system.
-        subtask:           'mslg2spa' or 'spa2mslg'.
-
-    Returns:
-        List of Global Scores, one per system (higher is better).
-    """
-    assert subtask in ("mslg2spa", "spa2mslg")
-
-    base_metrics = ["bleu", "meteor", "chrf"]
-    if subtask == "mslg2spa" and all("comet" in s for s in scores_per_system):
-        base_metrics = ["bleu", "meteor", "chrf", "comet"]
-
-    matrix = np.array(
-        [[s[m] for m in base_metrics] for s in scores_per_system],
-        dtype=float,
-    )
-
-    means = matrix.mean(axis=0)
-    stds = matrix.std(axis=0)
-    stds[stds == 0] = 1.0
-
-    normalized = (matrix - means) / stds
-    global_scores = normalized.mean(axis=1).tolist()
-
-    return global_scores

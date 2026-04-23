@@ -13,13 +13,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
-import yaml
 from transformers import AutoModelForSeq2SeqLM
 from peft import PeftModel
 import torch
 
 from src.data.dataset import load_pairs
 from src.evaluation.metrics import evaluate_subtask
+from src.utils import load_config
 
 
 def parse_args():
@@ -32,11 +32,6 @@ def parse_args():
         help="Compute COMET (mslg2spa only). Requires unbabel-comet.",
     )
     return parser.parse_args()
-
-
-def load_config(path: str) -> dict:
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
 
 
 def load_trained_model(checkpoint_dir: str):
