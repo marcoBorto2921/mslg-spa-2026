@@ -192,6 +192,11 @@ def main():
         lora_target_modules=config["lora"].get("target_modules"),
     )
 
+    # gradient_checkpointing + LoRA: frozen base params have no grad_fn, so
+    # checkpointing fails unless we force input embeddings to require grads.
+    if config["training"].get("gradient_checkpointing", False):
+        model.enable_input_require_grads()
+
     # ------------------------------------------------------------------ #
     # 3. Preprocessing (optional)
     # ------------------------------------------------------------------ #
