@@ -258,6 +258,14 @@ def main():
             "gradient_accumulation_steps", 1
         ),
         gradient_checkpointing=config["training"].get("gradient_checkpointing", False),
+        # use_reentrant=False required for LoRA + gradient_checkpointing:
+        # reentrant checkpointing expects inputs to require grad, but LoRA
+        # freezes the base model. Non-reentrant mode avoids this constraint.
+        gradient_checkpointing_kwargs=(
+            {"use_reentrant": False}
+            if config["training"].get("gradient_checkpointing", False)
+            else None
+        ),
         max_grad_norm=config["training"].get("max_grad_norm", 1.0),
         seed=config["training"]["seed"],
         label_smoothing_factor=config["training"].get("label_smoothing_factor", 0.0),
