@@ -1,0 +1,62 @@
+# configs/baseline_bt_local.yaml
+# Local GPU training with back-translated data — RTX 2050 (4 GB VRAM)
+#
+# Differences vs baseline_bt.yaml:
+#   per_device_train_batch_size: 8  → 2  (VRAM limit)
+#   gradient_accumulation_steps:     4   (effective batch = 8)
+#   gradient_checkpointing:          true
+#   output_dir:                      checkpoints/baseline_bt_local
+#
+# Run back_translate.py first to generate augmented_train.tsv.
+
+model:
+  name: "facebook/mbart-large-50"
+  max_source_length: 128
+  max_target_length: 128
+
+lora:
+  enabled: true
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.1
+  target_modules: ["q_proj", "v_proj"]
+
+data:
+  train_file: "data/processed/augmented_train.tsv"
+  real_train_file: "data/raw/MSLG_SPA_train.txt"
+  test_mslg2spa: "data/raw/MSLG2SPA_test.txt"
+  test_spa2mslg: "data/raw/SPA2MSLG_test.txt"
+  processed_dir: "data/processed/"
+  val_split: 0.15
+
+training:
+  output_dir: "checkpoints/baseline_bt_local"
+  num_train_epochs: 60
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: true
+  per_device_eval_batch_size: 8
+  learning_rate: 5.0e-4
+  warmup_steps: 50
+  weight_decay: 0.01
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  load_best_model_at_end: true
+  save_total_limit: 3
+  early_stopping_patience: 10
+  metric_for_best_model: "chrf"
+  greater_is_better: true
+  fp16: true
+  seed: 42
+  label_smoothing_factor: 0.0
+  eval_with_beam_search: false
+
+generation:
+  num_beams: 5
+  max_new_tokens: 128
+  length_penalty: 1.0
+  no_repeat_ngram_size: 0
+
+logging:
+  report_to: "none"
+  logging_steps: 10

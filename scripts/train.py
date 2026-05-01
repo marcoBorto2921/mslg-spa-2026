@@ -249,6 +249,10 @@ def main():
         greater_is_better=config["training"]["greater_is_better"],
         predict_with_generate=True,  # needed for seq2seq evaluation
         fp16=config["training"]["fp16"],
+        gradient_accumulation_steps=config["training"].get(
+            "gradient_accumulation_steps", 1
+        ),
+        gradient_checkpointing=config["training"].get("gradient_checkpointing", False),
         max_grad_norm=config["training"].get("max_grad_norm", 1.0),
         seed=config["training"]["seed"],
         label_smoothing_factor=config["training"].get("label_smoothing_factor", 0.0),
