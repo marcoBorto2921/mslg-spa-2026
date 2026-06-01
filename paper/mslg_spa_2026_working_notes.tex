@@ -18,6 +18,8 @@
 \usepackage{array}
 \usepackage{microtype}
 
+\keywords{sign language translation, mBART, LoRA, back-translation, low-resource NMT, Mexican Sign Language}
+
 %% --- CEUR mandatory metadata ---
 \copyrightyear{2026}
 \conference{IberLEF 2026, September 2026, Le\'on, Spain}
@@ -117,8 +119,8 @@ apply LoRA~\cite{hu2022lora} via the PEFT
 library~\cite{mangrulkar2022peft}, injecting rank-16 adapters only
 into the query and value projections of mBART-large-50~\cite{tang2020mbart50}.
 This yields 2.36M trainable parameters (0.39\% of the model),
-a configuration consistent with the LoRA literature recommendation
-to keep $r \leq 16$ for small fine-tuning datasets~\cite{hu2022lora}.
+a configuration consistent with the LoRA finding that low ranks
+are sufficient for fine-tuning on small datasets~\cite{hu2022lora}.
 
 The paper is organised as follows.
 Section~\ref{sec:related} surveys related work.
@@ -266,7 +268,7 @@ reuses Spanish-language priors from pretraining.
 \subsection{Base Model}
 
 We use \textbf{mBART-large-50}~\cite{tang2020mbart50}, a multilingual
-denoising auto-encoder pre-trained on 50 languages including Spanish.
+denoising autoencoder pre-trained on 50 languages including Spanish.
 The model has 611M parameters organized as a 12-layer encoder and
 12-layer decoder with hidden size 1024, 16 attention heads, and a
 shared vocabulary of 250,054 SentencePiece tokens.
@@ -297,8 +299,8 @@ The forward pass computes $h = W_0 x + \frac{\alpha}{r} BA\, x$,
 where $\alpha$ is a scaling hyperparameter.
 We set $r = 16$ and $\alpha = 32$, yielding
 \textbf{2.36M trainable parameters} (0.39\% of the total).
-This configuration follows the LoRA literature recommendation
-to use low rank on small datasets~\cite{hu2022lora}.
+This configuration is consistent with the LoRA finding that low ranks
+are sufficient for fine-tuning on small datasets~\cite{hu2022lora}.
 
 \subsection{Training Details}
 
@@ -437,7 +439,7 @@ our ranking among the 19 participating teams~\cite{rodriguez2026overview}.
 \centering
 \caption{Official test set results for the submitted runs and overall
   ranking (19 teams). Task Score is the average z-score across
-  BLEU, METEOR, and chrF. Global rank determined by the sum of
+  BLEU, METEOR, and chrF. Global rank determined by the average of
   both subtask scores.}
 \label{tab:testresults}
 \begin{tabular}{lccccc}
@@ -475,14 +477,15 @@ Both effects are analysed in Section~\ref{sec:discussion}.
 
 \paragraph{Learning rate and regularisation.}
 Reducing the learning rate from $5 \times 10^{-4}$ to
-$1 \times 10^{-4}$ with additional regularisation
-(max gradient norm 0.3, label smoothing 0.1) produced results at
-parity with or marginally worse than the original baseline on both
-subtasks (MSLG$\!\to\!$SPA chrF 48.38 vs.\ 49.29;
+$1 \times 10^{-4}$ with tighter gradient clipping (max norm 0.3)
+produced results at parity with or marginally worse than the original
+baseline on both subtasks (MSLG$\!\to\!$SPA chrF 48.38 vs.\ 49.29;
 SPA$\!\to\!$MSLG 42.75 vs.\ 44.42).
+An earlier variant that also added label smoothing 0.1 showed further
+regression and was discontinued.
 The first training run at $1 \times 10^{-4}$ also revealed a gradient
 overflow issue (gradient norm NaN during the second and third epochs),
-indicating that the default $5 \times 10^{-4}$ schedule
+indicating that our chosen $5 \times 10^{-4}$ schedule
 with light warm-up is more numerically stable on this architecture
 and dataset size.
 
@@ -493,7 +496,7 @@ and dataset size.
 We manually inspected a sample of test set system outputs ($N \approx 40$
 per subtask) and categorised errors following the taxonomy
 of~\cite{wslp2025}; percentages are approximate estimates from this
-sample.
+sample, normalised to sum to 100\% for readability.
 Table~\ref{tab:errors_m2s} and Table~\ref{tab:errors_s2m} show
 representative examples for each error category.
 
@@ -598,9 +601,10 @@ adjacent noun (\texttt{NI\~NO} instead of \texttt{NI\~NA}).
 \label{sec:discussion}
 
 \paragraph{Why does back-translation help so much?}
-A gain of more than 20 chrF points from adding 344--416 synthetic
-pairs to a 416-example training set is larger than typically reported
-in medium-resource NMT~\cite{edunov2018bt}.
+A gain of more than 20 chrF points from adding 344 synthetic pairs
+(MSLG$\!\to\!$SPA) or 416 (SPA$\!\to\!$MSLG) to a 416-example
+training set is larger than typically reported in medium-resource
+NMT~\cite{edunov2018bt}.
 We attribute this to three compounding factors.
 First, 416 pairs is below the minimum required for mBART's cross-attention
 to learn the structural regularity of the gloss language; every
@@ -650,12 +654,12 @@ For MSLG$\!\to\!$SPA, the submitted baseline (no BT) generalises
 well: 49.29 val vs.\ 46.14 test (a 3.15-point drop).
 The BT-augmented checkpoint reached 70.16 val chrF but was not
 selected for submission, as manual inspection showed higher output
-variance on out-of-split examples; in hindsight this decision appears
-correct.
+variance on out-of-split examples; in hindsight this conservative decision
+may have been justified, though the BT checkpoint was never evaluated
+on the blind test set so a definitive conclusion is not possible.
 For SPA$\!\to\!$MSLG, the submitted BT-augmented model
 (\texttt{bortolotti\_baseline\_bt\_SPA2MSLG}) shows a genuine
-generalisation gap: 68.89 val vs.\ 47.09 test (21.8 points), placing
-12th out of 19 teams.
+generalisation gap: 68.89 val vs.\ 47.09 test (21.8 points).
 We attribute this gap to the small validation split: 68.89 chrF on
 74 examples is driven by a handful of short or structurally simple
 sentences, and the BT-augmented model appears to have overfit to
@@ -677,6 +681,14 @@ carries substantial noise.
   \item \textbf{Training data subset}: the competition released 490
         of the 3,000 available Lara-Ortiz pairs. Performance on the
         full corpus and on out-of-domain data is unknown.
+  \item \textbf{Validation leakage in BT models}: the 74 held-out
+        validation glosses appear as targets in the synthetic
+        (SPA$_{\text{synth}}$, MSLG$_{\text{real}}$) pairs used to
+        train the BT-augmented SPA$\!\to\!$MSLG model (Phase~2 of
+        the BT pipeline, Section~\ref{sec:btpipeline}).
+        This subtle leakage likely contributes to the inflated
+        validation scores of the BT models and partially explains
+        the validation-to-test gap.
   \item \textbf{No human evaluation}: all metrics are automatic.
         Automatic MT metrics are known to correlate imperfectly with
         human judgment on low-resource and morphologically rich
@@ -703,8 +715,8 @@ Working with only 490 official training pairs, back-translation
 augmentation yields large internal validation improvements
 (+20.87 chrF for MSLG$\!\to\!$SPA, +24.47 chrF for SPA$\!\to\!$MSLG).
 On the official blind test set our submitted runs achieve chrF 46.14 /
-BLEU 16.81 (MSLG$\!\to\!$SPA, baseline; 13th on that subtask) and
-chrF 47.09 / BLEU 14.25 (SPA$\!\to\!$MSLG, BT-augmented; 12th),
+BLEU 16.81 (MSLG$\!\to\!$SPA, baseline) and
+chrF 47.09 / BLEU 14.25 (SPA$\!\to\!$MSLG, BT-augmented),
 placing 13th overall by composite z-score.
 The gap between validation and test performance underscores the
 instability of metric-based model selection with fewer than 100
