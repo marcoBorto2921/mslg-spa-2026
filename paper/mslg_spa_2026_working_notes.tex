@@ -65,9 +65,9 @@ global score of $-0.312$.
 The large validation-to-test gap for the BT-augmented SPA$\!\to\!$MSLG
 model (68.89 val vs.\ 47.09 test) highlights the difficulty of model
 selection with fewer than 100 validation examples.
-Ablation studies confirm that compact LoRA (rank 16, query and value
-projections, 2.36M parameters) consistently outperforms wider
-configurations in this extreme low-resource regime.
+We use compact LoRA (rank 16, query and value projections, 2.36M
+parameters), consistent with the literature recommendation for
+low-resource fine-tuning.
 \end{abstract}
 
 % ---------------------------------------------------------------
@@ -117,15 +117,15 @@ apply LoRA~\cite{hu2022lora} via the PEFT
 library~\cite{mangrulkar2022peft}, injecting rank-16 adapters only
 into the query and value projections of mBART-large-50~\cite{tang2020mbart50}.
 This yields 2.36M trainable parameters (0.39\% of the model),
-a configuration confirmed through ablation to be superior to
-higher-rank alternatives on this dataset size.
+a configuration consistent with the LoRA literature recommendation
+to keep $r \leq 16$ for small fine-tuning datasets~\cite{hu2022lora}.
 
 The paper is organised as follows.
 Section~\ref{sec:related} surveys related work.
 Section~\ref{sec:task} describes the task and dataset.
 Section~\ref{sec:system} details the system architecture and training
 procedure.
-Section~\ref{sec:experiments} reports experimental results and ablations.
+Section~\ref{sec:experiments} reports experimental results.
 Section~\ref{sec:analysis} provides error analysis with concrete examples.
 Section~\ref{sec:discussion} discusses the key findings.
 Section~\ref{sec:conclusion} concludes and outlines future work.
@@ -297,8 +297,8 @@ The forward pass computes $h = W_0 x + \frac{\alpha}{r} BA\, x$,
 where $\alpha$ is a scaling hyperparameter.
 We set $r = 16$ and $\alpha = 32$, yielding
 \textbf{2.36M trainable parameters} (0.39\% of the total).
-This configuration was validated through ablation studies
-(Section~\ref{sec:ablation}).
+This configuration follows the LoRA literature recommendation
+to use low rank on small datasets~\cite{hu2022lora}.
 
 \subsection{Training Details}
 
@@ -473,36 +473,6 @@ Both effects are analysed in Section~\ref{sec:discussion}.
 \subsection{Ablation Studies}
 \label{sec:ablation}
 
-\paragraph{LoRA capacity.}
-Table~\ref{tab:lora} compares LoRA configurations on the MSLG$\!\to\!$SPA
-validation split without back-translation.
-Extending the target modules from query/value to all four attention
-projections (query, key, value, output) at the same rank (16)
-raises the trainable parameter count from 2.36M to 4.72M but
-\emph{degrades} performance on both subtasks (MSLG$\!\to\!$SPA:
-$-0.33$ chrF; SPA$\!\to\!$MSLG: $-1.96$ chrF).
-With only 416 real training examples, additional LoRA capacity
-increases generalisation error rather than approximation quality,
-a direct manifestation of the bias--variance trade-off.
-The finding is consistent with the LoRA literature, which recommends
-lower ranks for smaller fine-tuning datasets~\cite{hu2022lora}.
-
-\begin{table}[h]
-\centering
-\caption{LoRA capacity ablation (val chrF, no BT augmentation).
-  Both subtasks shown.}
-\label{tab:lora}
-\begin{tabular}{lccccc}
-\toprule
-\textbf{Config} & \textbf{Rank} & \textbf{Modules} & \textbf{Params} &
-  \textbf{chrF M2S} & \textbf{chrF S2M} \\
-\midrule
-Baseline (ours)      & 16  & q, v       & 2.36M & \textbf{49.29} & \textbf{44.42} \\
-Extended (EXP-002)   & 16  & q, k, v, o & 4.72M & 48.96          & 42.46 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \paragraph{Learning rate and regularisation.}
 Reducing the learning rate from $5 \times 10^{-4}$ to
 $1 \times 10^{-4}$ with additional regularisation
@@ -645,19 +615,6 @@ as labels, which are the hardest-to-generate output in this direction.
 The model is thus exposed to many more unique gloss patterns without
 requiring additional human annotation.
 
-\paragraph{Why does lower LoRA rank win?}
-The 2.36M vs.\ 4.72M parameter ablation confirms the classic
-bias--variance story at very small data scales.
-With 416 examples, a LoRA adapter with 4.72M parameters corresponds
-roughly to one adapter parameter per 90 training tokens, which is
-insufficient to generalise.
-The baseline 2.36M adapter achieves a ratio of approximately one
-parameter per 180 training tokens, sitting in a better operating point
-for this corpus size.
-This suggests a practical heuristic: for LoRA fine-tuning on
-$N < 1000$ training examples, keep $r \leq 16$ and target modules
-to query and value projections only.
-
 \paragraph{SPA$\!\to\!$MSLG as morphological compression.}
 A key qualitative insight from error analysis is that
 SPA$\!\to\!$MSLG is structurally closer to \emph{keyword extraction
@@ -752,9 +709,9 @@ placing 13th overall by composite z-score.
 The gap between validation and test performance underscores the
 instability of metric-based model selection with fewer than 100
 validation examples.
-Ablation experiments confirm that compact LoRA (rank 16, q+v modules,
-2.36M parameters) outperforms higher-capacity configurations in this
-extreme low-resource regime, and that quality-threshold filtering of
+We adopt compact LoRA (rank 16, q+v modules, 2.36M parameters)
+following the recommendation in~\cite{hu2022lora} for small datasets,
+and find that quality-threshold filtering of
 BT pairs is harmful when the initial model is weak.
 Error analysis reveals that SPA$\!\to\!$MSLG is structurally a
 morphological compression task, suggesting that rule-based
