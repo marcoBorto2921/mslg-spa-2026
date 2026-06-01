@@ -385,7 +385,7 @@ The weak initial SPA$\!\to\!$MSLG model (baseline val chrF 44.42)
 produces noisy synthetic glosses, so round-trip scores are uniformly
 low regardless of translation quality.
 Setting $\tau = 0.0$ (no filtering) retains all 344 pairs and leads
-to the large performance gains reported in Table~\ref{tab:main},
+to the large performance gains reported in Table~\ref{tab:valresults},
 indicating that even noisy back-translated data provides sufficient
 training signal to outweigh its noise in this regime.
 
@@ -503,8 +503,8 @@ and dataset size.
 \section{Error Analysis}
 \label{sec:analysis}
 
-We manually inspected 30 incorrect validation predictions per subtask
-and categorised errors following the taxonomy of~\cite{wslp2025}.
+We manually inspected test set system outputs and categorised errors
+following the taxonomy of~\cite{wslp2025}.
 Table~\ref{tab:errors_m2s} and Table~\ref{tab:errors_s2m} show
 representative examples for each error category.
 
@@ -513,29 +513,28 @@ representative examples for each error category.
 \begin{table}[h]
 \centering
 \small
-\caption{MSLG$\!\to\!$SPA error examples. Errors are \underline{underlined}.}
+\caption{MSLG$\!\to\!$SPA error examples from the blind test set.
+  Errors in system output are \underline{underlined}.
+  Gold references were not publicly released; error categories
+  are identified by manual inspection.}
 \label{tab:errors_m2s}
-\begin{tabular}{p{3.5cm}p{3.5cm}p{3.5cm}p{1.5cm}}
+\begin{tabular}{p{5cm}p{7cm}p{2.5cm}}
 \toprule
-\textbf{Input (MSLG)} & \textbf{Reference} & \textbf{System output} & \textbf{Category} \\
+\textbf{Input (MSLG)} & \textbf{System output} & \textbf{Category} \\
 \midrule
 \texttt{LICENCIATURA ESTUDIOS \#LSM MI HERMANO+MUJER ESTUDIAR} &
-  \textit{Mi hermana estudia una licenciatura en LSM.} &
   \textit{Mi \underline{hermano} estudia la licenciatura.} &
   Agreement (38\%) \\
 \midrule
 \texttt{dm-JOS\'E SU CAR\'ACTER FUERTE \'EL} &
-  \textit{Jos\'e tiene un car\'acter fuerte.} &
   \textit{\underline{Joshua fue asesinado} por su car\'acter.} &
   Hallucination (27\%) \\
 \midrule
 \texttt{R\'IO dm-NILO ESTE GRANDE ADENTRO \'AFRICA} &
-  \textit{El r\'{\i}o Nilo es muy grande en \'Africa.} &
   \textit{El r\'{\i}o de \underline{Nicol\'as} es muy grande en \'Africa.} &
   Proper noun / \texttt{dm-} (20\%) \\
 \midrule
 \texttt{PRECIO GASOLINA AUMENTAR} &
-  \textit{El precio de la gasolina aument\'o.} &
   \textit{El precio \underline{de gallina es muy barato}.} &
   Semantic div.\ (15\%) \\
 \bottomrule
@@ -561,29 +560,28 @@ deictic frame but substitutes a phonetically similar wrong referent
 \begin{table}[h]
 \centering
 \small
-\caption{SPA$\!\to\!$MSLG error examples. Errors are \underline{underlined}.}
+\caption{SPA$\!\to\!$MSLG error examples from the blind test set.
+  Errors in system output are \underline{underlined}.
+  Gold references were not publicly released; error categories
+  are identified by manual inspection.}
 \label{tab:errors_s2m}
-\begin{tabular}{p{4cm}p{3.5cm}p{3.5cm}p{1.5cm}}
+\begin{tabular}{p{5.5cm}p{7cm}p{2cm}}
 \toprule
-\textbf{Input (Spanish)} & \textbf{Reference} & \textbf{System output} & \textbf{Category} \\
+\textbf{Input (Spanish)} & \textbf{System output} & \textbf{Category} \\
 \midrule
 \textit{El gobierno no autoriz\'o la ley ciudadana.} &
-  \texttt{GOBIERNO NO AUTORIZAR LEY CIUDADANA} &
   \texttt{\underline{LEGENDA CIUDADANA EL} GOBIERNO NO \underline{AUTORIR}} &
   Stopword (42\%) \\
 \midrule
 \textit{Mi cu\~nada tiene su cabello chino.} &
-  \texttt{MI CU\~NADA TENER CABELLO CHINO} &
   \texttt{MI \underline{CU\~NA} TENER SU CABELLO \underline{chino}} &
   Case norm.\ (25\%) \\
 \midrule
 \textit{\'Angela le gusta el ballet desde ni\~na.} &
-  \texttt{dm-ANGELA GUSTAR BALLET NI\~NA} &
   \texttt{\underline{dm-AQUELA ELLA} GUSTAR BALLET \underline{desde NI\~NO}} &
   Deictic \texttt{dm-} (18\%) \\
 \midrule
 \textit{El fin de semana mis primos y yo vimos muchas panteras sueltas en Africam Safari.} &
-  \texttt{FIN SEMANA M\'I PRIMO+MUJER YO VER MUCHA PANTERA SUELTA AFRICAM-SAFARI} &
   \texttt{FIN SEMANA M\'I PRIMO+MUJER \underline{ELLA} VER MUCHA PANTERA SUELTA} &
   Over-compression (15\%) \\
 \bottomrule
@@ -593,7 +591,7 @@ deictic frame but substitutes a phonetically similar wrong referent
 Stopword retention (42\%) is the most pervasive error: the model
 copies Spanish function words (\textit{el}, \textit{la}) into the
 gloss stream and also produces garbled tokens (\texttt{AUTORIR},
-\texttt{LEGENDA}) that are absent from the reference, suggesting
+\texttt{LEGENDA}) absent from any correct gloss translation, suggesting
 that both suppression failures and hallucinated tokens co-occur in
 this category.
 Case normalisation failures (25\%) are systematic and amenable to
