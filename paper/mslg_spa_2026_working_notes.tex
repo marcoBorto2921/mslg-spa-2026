@@ -1,38 +1,43 @@
-\documentclass[a4paper,11pt]{article}
+%% INSTRUCTIONS FOR OVERLEAF:
+%% 1. Download ceurart.cls from https://ceur-ws.org/Vol-XXX/CEURART.zip
+%% 2. Upload ceurart.cls to this Overleaf project (same folder as this .tex)
+%% 3. The \documentclass line below will then compile correctly.
 
-% --- Packages ---
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[english]{babel}
+\documentclass[sigconf,screen]{ceurart}
+
+%% If ceurart.cls is not yet available, use this fallback for local preview:
+%% \documentclass[a4paper,11pt]{article}
+%% \usepackage[utf8]{inputenc}
+%% \usepackage[T1]{fontenc}
+%% \usepackage[english]{babel}
+%% \usepackage{geometry}\geometry{margin=2.5cm}
+
 \usepackage{amsmath}
 \usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage{graphicx}
-\usepackage{microtype}
 \usepackage{multirow}
 \usepackage{array}
-\usepackage{xcolor}
-\usepackage{geometry}
-\geometry{margin=2.5cm}
+\usepackage{microtype}
 
-% CEUR-WS style hint: replace with the official ceurart class when available
-% \documentclass{ceurart}
+%% --- CEUR mandatory metadata ---
+\copyrightyear{2026}
+\conference{IberLEF 2026, September 2026, Le\'on, Spain}
 
-\title{%
-  Bidirectional Mexican Sign Language Gloss--Spanish Translation\\
-  via mBART and Back-Translation Data Augmentation:\\
-  System Description for IberLEF 2026 MSLG-SPA
-}
-
-\author{
-  Marco Bortolotti\\
-  \textit{Reply}\\
-  \href{mailto:m.bortolotti@reply.it}{m.bortolotti@reply.it}
-}
-
-\date{}
+%% No page numbers, no headers (CEUR requirement)
+\pagestyle{empty}
 
 \begin{document}
+
+\title{Bidirectional Mexican Sign Language Gloss--Spanish Translation
+  via mBART and Back-Translation Data Augmentation:
+  System Description for IberLEF 2026 MSLG-SPA}
+
+%% Full name + full affiliation + country required by CEUR
+\author[1]{Marco Bortolotti}
+\affiliation{%
+  \institution{Reply}
+  \country{Italy}
+}
+\email{m.bortolotti@reply.it}
 
 \maketitle
 
@@ -82,7 +87,7 @@ For Mexican Sign Language (LSM), the resources available to the research
 community are especially scarce.
 The official corpus released for the IberLEF 2026 MSLG-SPA shared task
 contains only 490 aligned gloss--Spanish sentence pairs, a subset of the
-3,000-pair Lara-Ortiz corpus~\cite{laraortiz2025} made available to
+3,000-pair Lara-Ortiz corpus~\cite{rodriguez2026overview} made available to
 competition participants.
 Working with fewer than 500 training examples pushes standard NMT
 pipelines into a regime where data augmentation and parameter-efficient
@@ -139,7 +144,7 @@ For sign languages with very limited data, the SIGNUM dataset
 ($\sim$600 German SL sentence pairs) has been used to demonstrate
 that mBART fine-tuning with back-translation can reach BLEU-4 67.60
 on gloss-to-text~\cite{wslp2025}.
-On LSM specifically, Lara-Ortiz et al.~\cite{laraortiz2025} fine-tuned
+On LSM specifically, Rodr\'iguez-Gonz\'alez et al.~\cite{rodriguez2026overview} fine-tuned
 a BARTO model on the full 3,000-pair corpus and reported BLEU-4 35.0
 as the baseline reference.
 The same work showed that augmenting the training set with glosses from
@@ -183,7 +188,7 @@ overfitting on small corpora~\cite{wslp2025}.
 
 \subsection{Task Description}
 
-The IberLEF 2026 MSLG-SPA shared task~\cite{laraortiz2025} requires
+The IberLEF 2026 MSLG-SPA shared task~\cite{rodriguez2026overview,iberlef2026overview} requires
 participating systems to translate between LSM gloss sequences and
 Spanish sentences in both directions.
 The official evaluation metrics are BLEU-4~\cite{papineni2002bleu},
@@ -196,7 +201,7 @@ small vocabularies~\cite{popovic2015chrf}.
 \subsection{Dataset}
 
 The official training corpus consists of 490 aligned sentence pairs
-drawn from the Lara-Ortiz LSM corpus~\cite{laraortiz2025}.
+drawn from the LSM corpus released by the task organizers~\cite{rodriguez2026overview}.
 We split these into a training set (416 pairs, 85\%) and a held-out
 validation set (74 pairs, 15\%) using a fixed random seed (42) for
 reproducibility across all experiments.
@@ -693,7 +698,7 @@ Several high-return directions remain for future work:
   \item \textbf{Cross-lingual transfer from ASL}: intermediate
         pretraining on the ASLG-PC12 English ASL gloss corpus has
         been reported to lift performance by +23 BLEU on
-        LSM~\cite{laraortiz2025}.
+        LSM~\cite{rodriguez2026overview}.
   \item \textbf{Dedicated gloss special tokens}: adding \texttt{dm-},
         \texttt{+}, \texttt{\#}, and \texttt{-} as vocabulary entries
         would prevent SentencePiece fragmentation of LSM-specific
@@ -705,15 +710,34 @@ The author thanks the IberLEF 2026 MSLG-SPA task organisers for
 releasing the dataset and evaluation infrastructure.
 
 % ---------------------------------------------------------------
+\section*{Declaration on Generative AI}
+
+During the preparation of this work the author used Claude Code
+(Anthropic) to assist with Python implementation, experiment tracking,
+and paper drafting.
+After using these tools, the author reviewed and edited the content as
+needed and takes full responsibility for the content of this publication.
+
+% ---------------------------------------------------------------
 \bibliographystyle{plain}
 \begin{thebibliography}{99}
 
-\bibitem{laraortiz2025}
-Lara-Ortiz, M., Gonz\'{a}lez-L\'{o}pez, S., et al.\ (2025).
-\emph{A Corpus and Evaluation Framework for Mexican Sign Language Gloss
-Translation}.
-In \textit{Proceedings of IberLEF 2026}, CEUR Workshop Proceedings.
-% Update with full author list and page numbers when available.
+\bibitem{rodriguez2026overview}
+Rodr\'{\i}guez-Gonz\'alez, A.\ Y., Fajardo-Delgado, D.,
+\'Alvarez-Carmona, M.\ \'A., S\'anchez-Cervantes, M.\ G.,
+D\'{\i}az-Pacheco, \'A., Aranda, R., Fajardo-Flores, S., \&
+Mart\'{\i}nez-Rodr\'{\i}guez, C.\ H.\ (2026).
+\emph{Overview of MSLG-SPA at IberLEF 2026: Bidirectional Translation
+between Mexican Sign Language Glosses and Spanish}.
+\textit{Procesamiento del Lenguaje Natural}, 77.
+
+\bibitem{iberlef2026overview}
+Bonet-Jover, A., Gonz\'alez-Barba, J.\ \'A., \& Chiruzzo, L.\ (2026).
+\emph{Overview of IberLEF 2026: Natural Language Processing Challenges
+for Spanish and other Iberian Languages}.
+In \textit{Proceedings of the Iberian Languages Evaluation Forum
+(IberLEF 2026), co-located with the 42nd Conference of the Spanish
+Society for Natural Language Processing (SEPLN 2026)}, CEUR-WS.org.
 
 \bibitem{liu2020mbart}
 Liu, Y., Gu, J., Goyal, N., Li, X., Edunov, S., Ghazvininejad, M.,
