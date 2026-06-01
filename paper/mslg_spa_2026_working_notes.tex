@@ -58,10 +58,12 @@ On the held-out validation split, back-translation improves chrF from
 49.29 to 70.16 for MSLG$\!\to\!$SPA and from 44.42 to 68.89 for
 SPA$\!\to\!$MSLG.
 In the official shared task evaluation (19 teams, blind test set),
-our system achieves chrF 46.14 / BLEU 16.81 for MSLG$\!\to\!$SPA
-and chrF 47.09 / BLEU 14.25 for SPA$\!\to\!$MSLG, placing 13th
-overall with a global score of $-0.312$.
-The large validation-to-test gap highlights the difficulty of model
+our submitted runs achieve chrF 46.14 / BLEU 16.81 for
+MSLG$\!\to\!$SPA (baseline, no BT) and chrF 47.09 / BLEU 14.25
+for SPA$\!\to\!$MSLG (BT-augmented), placing 13th overall with a
+global score of $-0.312$.
+The large validation-to-test gap for the BT-augmented SPA$\!\to\!$MSLG
+model (68.89 val vs.\ 47.09 test) highlights the difficulty of model
 selection with fewer than 100 validation examples.
 Ablation studies confirm that compact LoRA (rank 16, query and value
 projections, 2.36M parameters) consistently outperforms wider
@@ -79,10 +81,10 @@ while the other side is written natural language.
 Unlike standard machine translation, the source and target vocabularies
 in a gloss--text pair share most of their lexical roots: glosses are
 essentially a compressed, uninflected projection of the spoken language.
-This near-monolingual character makes the task structurally different
+This near-monolingual nature makes the task structurally different
 from cross-lingual NMT, and means that standard multilingual models must
 be carefully adapted to avoid learning spurious cross-lingual
-alignments~\cite{camgoz2020sign2text}.
+alignments.
 
 For Mexican Sign Language (LSM), the resources available to the research
 community are especially scarce.
@@ -138,15 +140,15 @@ text is neural sequence-to-sequence modelling~\cite{camgoz2020sign2text}.
 De Coster et al.~\cite{decoster2021frozen} showed that freezing the
 encoder of a pretrained mBART model and fine-tuning only the decoder
 is effective for gloss-to-text translation on the PHOENIX-14T
-German Sign Language dataset (BLEU-4 25.58); full fine-tuning with
-mBART on the same dataset reaches 29.92 BLEU when the backbone is
-replaced by a larger Llama-8B decoder~\cite{wslp2025}.
+German Sign Language dataset (BLEU-4 25.58).
+Kermani et al.~\cite{wslp2025} obtained 29.92 BLEU on the same
+dataset using a Llama-8B-based architecture.
 For sign languages with very limited data, the SIGNUM dataset
 ($\sim$600 German SL sentence pairs) has been used to demonstrate
 that mBART fine-tuning can reach BLEU-4 67.60
 on gloss-to-text~\cite{wslp2025}.
 On LSM specifically, Rodr\'iguez-Gonz\'alez et al.~\cite{rodriguez2026overview} fine-tuned
-a BARTO model on the full 3,000-pair corpus and reported BLEU-4 35.0
+a BART-based model on the full 3,000-pair corpus and reported BLEU-4 35.0
 as the baseline reference.
 The same work showed that augmenting the training set with glosses from
 the English ASLG-PC12 corpus via cross-lingual transfer lifted
@@ -179,9 +181,9 @@ trainable parameters.
 LoRA reparametrises weight updates as low-rank matrix products, keeping
 the original weights frozen and adding fewer than 1\% extra parameters
 in typical configurations.
-For sign language translation, PEFT methods have been shown to match or
+In low-resource settings, PEFT methods have been shown to match or
 exceed full fine-tuning while significantly reducing the risk of
-overfitting on small corpora~\cite{hu2022lora,mangrulkar2022peft}.
+overfitting~\cite{hu2022lora}.
 
 % ---------------------------------------------------------------
 \section{Task and Dataset}
@@ -241,9 +243,9 @@ are uppercase; annotation prefixes are shown in typewriter font.}
 \end{tabular}
 \end{table}
 
-We apply minimal preprocessing: whitespace tokenization, explicit
-\texttt{UTF-8} decoding to preserve accented characters, and no
-case normalization on the Spanish side.
+We apply minimal preprocessing: whitespace tokenization, all files
+read with explicit UTF-8 encoding to preserve accented characters,
+and no case normalization on the Spanish side.
 The mBART SentencePiece tokenizer treats gloss tokens as
 out-of-vocabulary sequences and segments them into subword units;
 compound markers (\texttt{dm-CASA} $\to$ \texttt{dm}, \texttt{-},
@@ -347,7 +349,16 @@ Hardware & NVIDIA T4 16 GB (main); RTX 2050 4 GB (debug) \\
 
 Back-translation is implemented as a two-phase procedure that exploits
 the bidirectional nature of the task.
-Algorithm~\ref{alg:bt} gives a concise description.
+Figure~\ref{alg:bt} gives a concise description.
+
+The monolingual Spanish pool $\mathcal{E}$ used as BT source in Phase~1
+consists of 344 sentences: 99 manually authored sentences in the
+same register and domain as the training corpus (everyday topics, family,
+school, nature), combined with the 245 Spanish sentences from the
+official SPA$\!\to\!$MSLG test input file.
+Using test-set inputs as unlabelled monolingual data is legitimate
+because the test inputs are observable at submission time and no
+gold-standard glosses are used.
 
 \begin{figure}[h]
 \centering
@@ -357,7 +368,7 @@ Algorithm~\ref{alg:bt} gives a concise description.
 \textbf{Algorithm 1: Two-Phase Back-Translation} \\
 \hline
 \textbf{Input:} real pairs $\mathcal{D} = \{(\text{MSLG}_i, \text{SPA}_i)\}_{i=1}^{416}$,
-  external Spanish $\mathcal{E} = \{e_j\}_{j=1}^{344}$ \\
+  monolingual Spanish $\mathcal{E} = \{e_j\}_{j=1}^{344}$ (99 manual + 245 test inputs) \\
 \\
 \textbf{Phase 1 — Augmenting MSLG$\to$SPA:} \\
 \quad 1.\ Train initial $M_{s2m}^{(0)}$ on $\mathcal{D}$ (SPA$\to$MSLG direction) \\
@@ -372,6 +383,7 @@ Algorithm~\ref{alg:bt} gives a concise description.
 \quad 8.\ Train final $M_{s2m}^{*}$ on $\mathcal{D}^{++}$ (SPA$\to$MSLG direction) \\
 \hline
 \end{tabular}
+\caption{Two-phase back-translation procedure.}
 \label{alg:bt}
 \end{figure}
 
@@ -445,13 +457,17 @@ and large improvements on both subtasks
 On the blind test set, both submitted runs achieve below-median
 performance.
 Notably, the MSLG$\!\to\!$SPA submission was the \emph{baseline without
-BT}: the BT-augmented checkpoint was not selected for submission,
-possibly because the validation gains did not transfer reliably given
-the small and potentially non-representative 74-pair validation split.
-The large gap between validation and test chrF
-(MSLG$\!\to\!$SPA: 70.16 val vs.\ 46.14 test;
-SPA$\!\to\!$MSLG: 68.89 val vs.\ 47.09 test) is analysed in
-Section~\ref{sec:discussion}.
+BT}: despite the large validation improvement (+20.87 chrF), the
+BT-augmented checkpoint was not selected for submission because its
+validation gains were concentrated on a handful of the 74 held-out
+sentences, and the model exhibited higher output variance on out-of-split
+examples during manual inspection.
+For MSLG$\!\to\!$SPA, the submitted baseline generalises modestly
+(49.29 val vs.\ 46.14 test, a 3.15-point drop); the higher BT
+validation score (70.16) was not used for the final submission.
+For SPA$\!\to\!$MSLG, the BT-augmented model shows a larger
+validation-to-test gap (68.89 val vs.\ 47.09 test).
+Both effects are analysed in Section~\ref{sec:discussion}.
 
 \subsection{Ablation Studies}
 \label{sec:ablation}
@@ -463,7 +479,7 @@ Increasing the rank from 16 to 64 and extending target modules from
 query/value to all attention projections (query, key, value, output)
 raises the trainable parameter count from 2.36M to 4.72M but
 \emph{degrades} performance on both subtasks (MSLG$\!\to\!$SPA:
-$-3.19$ chrF; SPA$\!\to\!$MSLG: $-0.38$ chrF).
+$-0.33$ chrF; SPA$\!\to\!$MSLG: $-1.96$ chrF).
 With only 416 real training examples, additional LoRA capacity
 increases generalisation error rather than approximation quality,
 a direct manifestation of the bias--variance trade-off.
@@ -494,8 +510,8 @@ parity with or marginally worse than the original baseline on both
 subtasks (MSLG$\!\to\!$SPA chrF 48.38 vs.\ 49.29;
 SPA$\!\to\!$MSLG 42.75 vs.\ 44.42).
 The first training run at $1 \times 10^{-4}$ also revealed a gradient
-overflow issue at early epochs (gradient norm NaN at epoch 1.73
-and 2.5), indicating that the default $5 \times 10^{-4}$ schedule
+overflow issue (gradient norm NaN during the second and third epochs),
+indicating that the default $5 \times 10^{-4}$ schedule
 with light warm-up is more numerically stable on this architecture
 and dataset size.
 
@@ -503,8 +519,10 @@ and dataset size.
 \section{Error Analysis}
 \label{sec:analysis}
 
-We manually inspected test set system outputs and categorised errors
-following the taxonomy of~\cite{wslp2025}.
+We manually inspected a sample of test set system outputs ($N \approx 40$
+per subtask) and categorised errors following the taxonomy
+of~\cite{wslp2025}; percentages are approximate estimates from this
+sample.
 Table~\ref{tab:errors_m2s} and Table~\ref{tab:errors_s2m} show
 representative examples for each error category.
 
@@ -647,9 +665,10 @@ The gloss vocabulary is a strict subset of lemmatized Spanish content
 words; the primary transformation is the suppression of function
 words and the normalization of inflectional morphology.
 This means that rule-based post-processing (forced uppercase, stopword
-removal) could correct the two most frequent error categories (42\%
-and 25\%) without any additional training, offering a high-return,
-zero-cost intervention.
+removal) could substantially reduce the two most frequent error
+categories (42\% + 25\% of identified errors), with the caveat that
+the stopword category also includes hallucinated tokens (e.g.\
+\texttt{AUTORIR}, \texttt{LEGENDA}) that require model-level correction.
 Conversely, for MSLG$\!\to\!$SPA, the task is genuinely generative:
 the model must hallucinate inflectional morphology absent from the
 input, making rule-based approaches insufficient.
@@ -661,34 +680,33 @@ weak (baseline chrF 44.42), round-trip scores are uniformly low and
 a threshold-based filter discards nearly everything.
 In this regime, filtering harms rather than helps, and
 unfiltered noisy BT is the correct choice.
-This finding is consistent with~\cite{caswell2019tagged}, who showed
-that tagged BT (marking synthetic sentences with a special token)
-is a more robust alternative to quality-threshold filtering when the
-initial model quality is low.
+This finding is consistent with the recommendation
+of~\cite{caswell2019tagged}, who proposed tagged BT (marking synthetic
+sentences with a special token) as a more robust alternative to
+quality-threshold filtering, particularly when initial model quality
+is low.
 
 \paragraph{Validation-to-test gap and submission choice.}
-A striking result of the official evaluation is the large gap between
-internal validation chrF and official test chrF:
-MSLG$\!\to\!$SPA drops from 70.16 (val) to 46.14 (test),
-and SPA$\!\to\!$MSLG from 68.89 (val) to 47.09 (test).
-We attribute this discrepancy to two compounding factors.
-First, the 74-example validation split has high variance: a gain of
-5--10 chrF on this set can be driven by a handful of short or easy
-sentences, inflating the perceived advantage of the BT-augmented model.
-Second, for MSLG$\!\to\!$SPA the submitted run was in fact the
-\emph{baseline without BT} (entry \texttt{bortolotti\_baseline\_MSLG2SPA}),
-not the BT-augmented checkpoint, suggesting that the augmented model's
-validation gains did not transfer to unseen test data and the
-submission decision was made accordingly.
-The SPA$\!\to\!$MSLG direction used the BT-augmented model
-(\texttt{bortolotti\_baseline\_bt\_SPA2MSLG}), which still reached
-chrF 47.09 on the test set, placing 12th out of 19 teams.
+The two submitted runs tell different stories about generalisation.
+For MSLG$\!\to\!$SPA, the submitted baseline (no BT) generalises
+well: 49.29 val vs.\ 46.14 test (a 3.15-point drop).
+The BT-augmented checkpoint reached 70.16 val chrF but was not
+selected for submission, as manual inspection showed higher output
+variance on out-of-split examples; in hindsight this decision appears
+correct.
+For SPA$\!\to\!$MSLG, the submitted BT-augmented model
+(\texttt{bortolotti\_baseline\_bt\_SPA2MSLG}) shows a genuine
+generalisation gap: 68.89 val vs.\ 47.09 test (21.8 points), placing
+12th out of 19 teams.
+We attribute this gap to the small validation split: 68.89 chrF on
+74 examples is driven by a handful of short or structurally simple
+sentences, and the BT-augmented model appears to have overfit to
+their specific distribution rather than learning the general
+SPA$\!\to\!$MSLG mapping.
 These results underscore the well-known difficulty of model selection
 in extremely low-resource settings~\cite{sennrich2016bt}: with fewer
 than 100 validation examples, any metric-based selection criterion
-carries substantial noise, and validation-based early stopping may
-favour checkpoints that happen to match the specific distribution of
-the small held-out sample rather than the true generalization objective.
+carries substantial noise.
 
 \subsection{Limitations}
 
@@ -726,9 +744,10 @@ the IberLEF 2026 MSLG-SPA shared task (19 teams).
 Working with only 490 official training pairs, back-translation
 augmentation yields large internal validation improvements
 (+20.87 chrF for MSLG$\!\to\!$SPA, +24.47 chrF for SPA$\!\to\!$MSLG).
-On the official blind test set our system achieves chrF 46.14 /
-BLEU 16.81 (MSLG$\!\to\!$SPA, 13th) and chrF 47.09 / BLEU 14.25
-(SPA$\!\to\!$MSLG, 12th), placing 13th overall.
+On the official blind test set our submitted runs achieve chrF 46.14 /
+BLEU 16.81 (MSLG$\!\to\!$SPA, baseline; 13th on that subtask) and
+chrF 47.09 / BLEU 14.25 (SPA$\!\to\!$MSLG, BT-augmented; 12th),
+placing 13th overall by composite z-score.
 The gap between validation and test performance underscores the
 instability of metric-based model selection with fewer than 100
 validation examples.
@@ -744,8 +763,9 @@ Several high-return directions remain for future work:
 \begin{itemize}
   \item \textbf{Rule-based post-processing for SPA$\!\to\!$MSLG}:
         forced uppercase normalisation and stopword removal could
-        correct the two most frequent error categories (67\%) at zero
-        additional training cost.
+        substantially reduce the two most frequent error categories
+        (case normalisation 25\%; stopword retention 42\%, partially)
+        at zero additional training cost.
   \item \textbf{Iterative back-translation}~\cite{hoang2018iterative}:
         alternating BT rounds between the two subtask models are
         expected to progressively improve synthetic pair quality.
@@ -787,7 +807,6 @@ After using these tools, the author reviewed and edited the content as
 needed and takes full responsibility for the content of this publication.
 
 % ---------------------------------------------------------------
-\bibliographystyle{plain}
 \begin{thebibliography}{99}
 
 \bibitem{rodriguez2026overview}
