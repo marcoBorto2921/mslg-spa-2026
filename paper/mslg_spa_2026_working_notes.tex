@@ -59,11 +59,12 @@ real gloss side, yielding supplementary (synthetic-SPA, real-MSLG) pairs.
 On the held-out validation split, back-translation improves chrF from
 49.29 to 70.16 for MSLG$\!\to\!$SPA and from 44.42 to 68.89 for
 SPA$\!\to\!$MSLG.
-In the official shared task evaluation (19 teams, blind test set),
+In the official shared task evaluation (19 teams overall, blind test set),
 our submitted runs achieve chrF 46.14 / BLEU 16.81 for
 MSLG$\!\to\!$SPA (baseline, no BT) and chrF 47.09 / BLEU 14.25
-for SPA$\!\to\!$MSLG (BT-augmented), placing 13th overall with a
-global score of $-0.312$.
+for SPA$\!\to\!$MSLG (BT-augmented), placing 13th/20 on
+MSLG$\!\to\!$SPA, 12th/19 on SPA$\!\to\!$MSLG, and 13th overall
+with a global score of $-0.312$.
 The large validation-to-test gap for the BT-augmented SPA$\!\to\!$MSLG
 model (68.89 val vs.\ 47.09 test) highlights the difficulty of model
 selection with fewer than 100 validation examples.
@@ -413,7 +414,7 @@ training signal to outweigh its noise in this regime.
 Table~\ref{tab:valresults} reports internal validation performance for
 the baseline and BT-augmented systems, used for checkpoint selection.
 Table~\ref{tab:testresults} reports the official test set scores and
-our ranking among the 19 participating teams~\cite{rodriguez2026overview}.
+our ranking among participating teams~\cite{rodriguez2026overview}.
 
 \begin{table}[h]
 \centering
@@ -437,19 +438,21 @@ our ranking among the 19 participating teams~\cite{rodriguez2026overview}.
 
 \begin{table}[h]
 \centering
-\caption{Official test set results for the submitted runs and overall
-  ranking (19 teams). Task Score is the average z-score across
-  BLEU, METEOR, and chrF. Global rank determined by the average of
-  both subtask scores.}
+\caption{Official test set results for the submitted runs and subtask
+  rankings. Task Score is the average z-score across evaluation metrics
+  (BLEU, METEOR, chrF, and COMET for MSLG$\to$SPA; BLEU, METEOR, and
+  chrF for SPA$\to$MSLG). Global rank (19 teams) is determined by the
+  average of both subtask scores.}
 \label{tab:testresults}
-\begin{tabular}{lccccc}
+\begin{tabular}{lcccccc}
 \toprule
-\textbf{Subtask} & \textbf{Submitted run} & \textbf{BLEU} & \textbf{METEOR} & \textbf{chrF} & \textbf{Task Score} \\
+\textbf{Subtask} & \textbf{Submitted run} & \textbf{BLEU} & \textbf{METEOR} & \textbf{chrF} & \textbf{COMET} & \textbf{Task Score} \\
 \midrule
-MSLG$\!\to\!$SPA & baseline (no BT) & 16.81 & 0.371 & 46.14 & $-0.464$ \\
-SPA$\!\to\!$MSLG & baseline + rev.\ BT & 14.25 & 0.361 & 47.09 & $-0.161$ \\
+MSLG$\!\to\!$SPA & baseline (no BT) & 16.81 & 0.371 & 46.14 & 0.699 & $-0.464$ \\
+SPA$\!\to\!$MSLG & baseline + rev.\ BT & 14.25 & 0.361 & 47.09 & --- & $-0.161$ \\
 \midrule
-\multicolumn{4}{l}{\textbf{Global rank: 13 / 19}} & & $-0.312$ \\
+\multicolumn{5}{l}{\textbf{Subtask ranks: 13\textsuperscript{th}/20 (MSLG$\to$SPA), 12\textsuperscript{th}/19 (SPA$\to$MSLG)}} & & \\
+\multicolumn{5}{l}{\textbf{Global rank: 13 / 19}} & & $-0.312$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -710,13 +713,13 @@ carries substantial noise.
 
 We presented a bidirectional LSM gloss--Spanish translation system
 based on mBART-large-50 with compact LoRA fine-tuning, submitted to
-the IberLEF 2026 MSLG-SPA shared task (19 teams).
+the IberLEF 2026 MSLG-SPA shared task (19 teams overall).
 Working with only 490 official training pairs, back-translation
 augmentation yields large internal validation improvements
 (+20.87 chrF for MSLG$\!\to\!$SPA, +24.47 chrF for SPA$\!\to\!$MSLG).
 On the official blind test set our submitted runs achieve chrF 46.14 /
-BLEU 16.81 (MSLG$\!\to\!$SPA, baseline) and
-chrF 47.09 / BLEU 14.25 (SPA$\!\to\!$MSLG, BT-augmented),
+BLEU 16.81 (MSLG$\!\to\!$SPA, baseline; 13th/20 on that subtask) and
+chrF 47.09 / BLEU 14.25 (SPA$\!\to\!$MSLG, BT-augmented; 12th/19),
 placing 13th overall by composite z-score.
 The gap between validation and test performance underscores the
 instability of metric-based model selection with fewer than 100
