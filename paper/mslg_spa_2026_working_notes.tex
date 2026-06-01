@@ -231,17 +231,15 @@ are uppercase; annotation prefixes are shown in typewriter font.}
 \toprule
 \textbf{LSM Gloss} & \textbf{Spanish} \\
 \midrule
-\texttt{HOMBRE dm-ESE COMER MUCHO} &
-  \textit{Ese hombre come mucho.} \\
-\texttt{\#CAFE QUERER YO} &
-  \textit{Yo quiero caf\'e.} \\
-\texttt{CASA+GRANDE dm-AQUI VIVIR} &
-  \textit{Vivo en esa casa grande.} \\
+\texttt{dm-ISABEL TENER SU CORONA ORO} &
+  \textit{Isabel tiene una corona de oro.} \\
+\texttt{TUYA MAESTRO+MUJER T\'U PONER-ATENCI\'ON ELLA} &
+  \textit{Le pusiste atenci\'on a tu maestra?} \\
+\texttt{SU \#SEP CALENDARIO AGOSTO TERMINAR} &
+  \textit{El calendario de la SEP termina en agosto.} \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-% NOTE: replace the above examples with real pairs from the corpus.
 
 We apply minimal preprocessing: whitespace tokenization, explicit
 \texttt{UTF-8} decoding to preserve accented characters, and no
@@ -521,38 +519,42 @@ representative examples for each error category.
 \toprule
 \textbf{Input (MSLG)} & \textbf{Reference} & \textbf{System output} & \textbf{Category} \\
 \midrule
-\texttt{MUJER JOVEN BAILAR BIEN} &
-  \textit{La mujer joven baila bien.} &
-  \textit{El mujer joven baila bien.} &
+\texttt{LICENCIATURA ESTUDIOS \#LSM MI HERMANO+MUJER ESTUDIAR} &
+  \textit{Mi hermana estudia una licenciatura en LSM.} &
+  \textit{Mi \underline{hermano} estudia la licenciatura.} &
   Agreement (38\%) \\
 \midrule
-\texttt{PERRO} &
-  \textit{El perro.} &
-  \textit{\underline{El perro corre en el parque}.} &
+\texttt{dm-JOS\'E SU CAR\'ACTER FUERTE \'EL} &
+  \textit{Jos\'e tiene un car\'acter fuerte.} &
+  \textit{\underline{Joshua fue asesinado} por su car\'acter.} &
   Hallucination (27\%) \\
 \midrule
-\texttt{\#TAXI LLEGAR} &
-  \textit{El taxi llega.} &
-  \textit{\underline{El camion} llega.} &
-  Proper noun / \# (20\%) \\
+\texttt{R\'IO dm-NILO ESTE GRANDE ADENTRO \'AFRICA} &
+  \textit{El r\'{\i}o Nilo es muy grande en \'Africa.} &
+  \textit{El r\'{\i}o de \underline{Nicol\'as} es muy grande en \'Africa.} &
+  Proper noun / \texttt{dm-} (20\%) \\
 \midrule
-\texttt{COMIDA LISTA} &
-  \textit{La comida est\'a lista.} &
-  \textit{\underline{La comida es buena}.} &
+\texttt{PRECIO GASOLINA AUMENTAR} &
+  \textit{El precio de la gasolina aument\'o.} &
+  \textit{El precio \underline{de gallina es muy barato}.} &
   Semantic div.\ (15\%) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Morphological agreement errors (38\%) occur most frequently when the
-gloss lacks explicit gender or number markers, forcing the model to
-infer agreement from context.
-Hallucinations (27\%) are most common for very short inputs (1--2
-gloss tokens), where the model over-generates from its Spanish
-language prior.
-Fingerspelling tokens prefixed with \texttt{\#} (20\%) are
-fragmented by the SentencePiece tokenizer and often decoded
-as phonetically similar but semantically incorrect words.
+Morphological agreement errors (38\%) arise most often with compound
+glosses such as \texttt{HERMANO+MUJER} (literally ``male-sibling +
+female marker''), where the model fails to resolve the compound to
+its feminine lemma \textit{hermana}, producing incorrect gender
+agreement downstream.
+Hallucinations (27\%) are triggered by deictic proper-name tokens:
+\texttt{dm-JOS\'E} is misread as a different name (\textit{Joshua})
+and the model then fabricates entirely false narrative content
+(\textit{fue asesinado}) from its Spanish language prior.
+Proper-name errors under the \texttt{dm-} prefix (20\%) account
+for a distinct failure mode in which the model recognises the
+deictic frame but substitutes a phonetically similar wrong referent
+(\textit{Nicol\'as} for \textit{Nilo}).
 
 \subsection{SPA$\!\to\!$MSLG Errors}
 
@@ -565,40 +567,44 @@ as phonetically similar but semantically incorrect words.
 \toprule
 \textbf{Input (Spanish)} & \textbf{Reference} & \textbf{System output} & \textbf{Category} \\
 \midrule
-\textit{El ni\~no come una manzana.} &
-  \texttt{NI\~NO COMER MANZANA} &
-  \texttt{\underline{EL} NI\~NO COMER \underline{UNA} MANZANA} &
+\textit{El gobierno no autoriz\'o la ley ciudadana.} &
+  \texttt{GOBIERNO NO AUTORIZAR LEY CIUDADANA} &
+  \texttt{\underline{LEGENDA CIUDADANA EL} GOBIERNO NO \underline{AUTORIR}} &
   Stopword (42\%) \\
 \midrule
-\textit{Yo quiero agua.} &
-  \texttt{QUERER AGUA} &
-  \texttt{\underline{querer agua}} &
+\textit{Mi cu\~nada tiene su cabello chino.} &
+  \texttt{MI CU\~NADA TENER CABELLO CHINO} &
+  \texttt{MI \underline{CU\~NA} TENER SU CABELLO \underline{chino}} &
   Case norm.\ (25\%) \\
 \midrule
-\textit{Esa casa es grande.} &
-  \texttt{dm-ESA CASA GRANDE} &
-  \texttt{\underline{ESA} CASA GRANDE} &
+\textit{\'Angela le gusta el ballet desde ni\~na.} &
+  \texttt{dm-ANGELA GUSTAR BALLET NI\~NA} &
+  \texttt{\underline{dm-AQUELA ELLA} GUSTAR BALLET \underline{desde NI\~NO}} &
   Deictic \texttt{dm-} (18\%) \\
 \midrule
-\textit{El doctor dice que la medicina es importante.} &
-  \texttt{DOCTOR DECIR MEDICINA IMPORTANTE} &
-  \texttt{DOCTOR DECIR \underline{IMPORTANTE}} &
+\textit{El fin de semana mis primos y yo vimos muchas panteras sueltas en Africam Safari.} &
+  \texttt{FIN SEMANA M\'I PRIMO+MUJER YO VER MUCHA PANTERA SUELTA AFRICAM-SAFARI} &
+  \texttt{FIN SEMANA M\'I PRIMO+MUJER \underline{ELLA} VER MUCHA PANTERA SUELTA} &
   Over-compression (15\%) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Stopword retention (42\%) is the most pervasive error, suggesting
-that the model has not fully learned to suppress the function-word
-vocabulary common to Spanish but absent from LSM glosses.
+Stopword retention (42\%) is the most pervasive error: the model
+copies Spanish function words (\textit{el}, \textit{la}) into the
+gloss stream and also produces garbled tokens (\texttt{AUTORIR},
+\texttt{LEGENDA}) that are absent from the reference, suggesting
+that both suppression failures and hallucinated tokens co-occur in
+this category.
 Case normalisation failures (25\%) are systematic and amenable to
 trivial post-processing (forced uppercasing), representing low-hanging
-fruit for future improvement.
-Deictic marker errors (18\%) are interesting because the model
-recognises the demonstrative referent but fails to prefix it with the
-\texttt{dm-} morpheme, indicating that the notation conventions are
-underspecified from the model's perspective due to low frequency in
-the training data.
+fruit for future improvement; the example also shows partial truncation
+of inflected forms (\texttt{CU\~NA} instead of \texttt{CU\~NADA}).
+Deictic marker errors (18\%) manifest differently from the MSLG$\to$SPA
+direction: the model does use the \texttt{dm-} prefix but attaches the
+wrong proper-name token (\texttt{AQUELA} for \texttt{ANGELA}) and
+additionally retains function words and inverts the gender of an
+adjacent noun (\texttt{NI\~NO} instead of \texttt{NI\~NA}).
 
 % ---------------------------------------------------------------
 \section{Discussion}
