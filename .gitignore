@@ -1,15 +1,19 @@
-# Data — i file del dataset non vanno mai su GitHub
+# Dataset (not allowed to redistribute)
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
-# Checkpoints e output dei modelli (file enormi)
+# Model checkpoints (large binaries)
 checkpoints/
 outputs/
-results/
 runs/
 wandb/
+*.bin
+*.safetensors
+*.pt
+*.h5
+*.pkl
 
 # Python
 __pycache__/
@@ -18,25 +22,27 @@ __pycache__/
 dist/
 build/
 
-# Virtual environment
+# Virtual environments
+.venv/
 venv/
+env/
 
 # Jupyter
 .ipynb_checkpoints/
 
-# IDE
+# Tool caches
+.ruff_cache/
+.pytest_cache/
+
+# Internal project management (Claude Code)
+.claude/
+docs/superpowers/
+
+# IDE / OS
 .vscode/
 .idea/
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Pesi dei modelli HuggingFace (file enormi)
-*.bin
-*.safetensors
-
-PROJECT_LOG.md
-
-# Claude Code internal files
-.claude/
+# Secrets
+.env
