@@ -195,10 +195,10 @@ The IberLEF 2026 MSLG-SPA shared task~\cite{rodriguez2026overview,iberlef2026ove
 participating systems to translate between LSM gloss sequences and
 Spanish sentences in both directions.
 The official evaluation metrics are BLEU-4~\cite{papineni2002bleu},
-METEOR~\cite{banerjee2005meteor}, and character F-score
-(chrF)~\cite{popovic2015chrf}.
+METEOR~\cite{banerjee2005meteor}, character F-score
+(chrF)~\cite{popovic2015chrf}, and COMET~\cite{rei2020comet}.
 Rankings are determined by a composite task score computed as the
-average z-score across all three metrics.
+average z-score across all four metrics.
 We use chrF as the primary validation metric for checkpoint selection,
 as it is more robust than BLEU on short sequences and
 small vocabularies~\cite{popovic2015chrf}.
@@ -317,20 +317,21 @@ Base model & mBART-large-50 \\
 LoRA rank $r$ & 16 \\
 LoRA $\alpha$ & 32 \\
 LoRA target modules & \texttt{q\_proj}, \texttt{v\_proj} \\
+LoRA dropout & 0.1 \\
 Trainable parameters & 2.36M (0.39\%) \\
 \midrule
 Optimizer & AdamW \\
 Learning rate & $5 \times 10^{-4}$ \\
 LR schedule & Linear decay \\
 Warmup steps & 50 \\
-Weight decay & 0.0 \\
+Weight decay & 0.01 \\
 Gradient clip (max norm) & 1.0 \\
 \midrule
 Batch size (physical) & 8 (Colab T4) / 4 (RTX 2050) \\
 Gradient accumulation & 1 (Colab) / 4 (RTX 2050) \\
 Effective batch size & 8 \\
-Max epochs & 60 \\
-Early stopping patience & 5 (val chrF) \\
+Max epochs & 40 (baseline) / 60 (BT models) \\
+Early stopping patience & 10 (val chrF) \\
 Best model criterion & Highest val chrF \\
 \midrule
 Beam width & 5 \\
@@ -434,19 +435,20 @@ our ranking among the 19 participating teams~\cite{rodriguez2026overview}.
 
 \begin{table}[h]
 \centering
-\caption{Official test set results for the submitted runs and overall
-  ranking among 19 teams. Task Score is the average z-score across
-  BLEU, METEOR, and chrF. Global rank determined by the sum of
-  both subtask scores.}
+\caption{Official test set results for the submitted runs and global
+  ranking (19 teams). Task Score is the average z-score across
+  BLEU, METEOR, chrF, and COMET. Global rank determined by the sum of
+  both subtask scores. COMET for SPA$\!\to\!$MSLG not reported in
+  official leaderboard data available to us.}
 \label{tab:testresults}
-\begin{tabular}{lccccc}
+\begin{tabular}{lcccccc}
 \toprule
-\textbf{Subtask} & \textbf{Submitted run} & \textbf{BLEU} & \textbf{METEOR} & \textbf{chrF} & \textbf{Task Score} \\
+\textbf{Subtask} & \textbf{Submitted run} & \textbf{BLEU} & \textbf{METEOR} & \textbf{chrF} & \textbf{COMET} & \textbf{Task Score} \\
 \midrule
-MSLG$\!\to\!$SPA & baseline (no BT) & 16.81 & 0.371 & 46.14 & $-0.464$ \\
-SPA$\!\to\!$MSLG & baseline + rev.\ BT & 14.25 & 0.361 & 47.09 & $-0.161$ \\
+MSLG$\!\to\!$SPA & baseline (no BT) & 16.81 & 0.371 & 46.14 & 0.699 & $-0.464$ \\
+SPA$\!\to\!$MSLG & baseline + rev.\ BT & 14.25 & 0.361 & 47.09 & -- & $-0.161$ \\
 \midrule
-\multicolumn{4}{l}{\textbf{Global rank: 13 / 19}} & & $-0.312$ \\
+\multicolumn{5}{l}{\textbf{Global rank: 13 / 19}} & & $-0.312$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -475,8 +477,8 @@ Both effects are analysed in Section~\ref{sec:discussion}.
 \paragraph{LoRA capacity.}
 Table~\ref{tab:lora} compares LoRA configurations on the MSLG$\!\to\!$SPA
 validation split without back-translation.
-Increasing the rank from 16 to 64 and extending target modules from
-query/value to all attention projections (query, key, value, output)
+Extending the target modules from query/value to all four attention
+projections (query, key, value, output) at the same rank (16)
 raises the trainable parameter count from 2.36M to 4.72M but
 \emph{degrades} performance on both subtasks (MSLG$\!\to\!$SPA:
 $-0.33$ chrF; SPA$\!\to\!$MSLG: $-1.96$ chrF).
@@ -497,7 +499,7 @@ lower ranks for smaller fine-tuning datasets~\cite{hu2022lora}.
   \textbf{chrF M2S} & \textbf{chrF S2M} \\
 \midrule
 Baseline (ours)      & 16  & q, v       & 2.36M & \textbf{49.29} & \textbf{44.42} \\
-Extended (EXP-002)   & 64  & q, k, v, o & 4.72M & 48.96          & 42.46 \\
+Extended (EXP-002)   & 16  & q, k, v, o & 4.72M & 48.96          & 42.46 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -894,6 +896,11 @@ In \textit{Proceedings of the Workshop on Sign Language Processing
 (WSLP)}, IIT Bombay, Mumbai, India, pp.\ 73--81.
 Association for Computational Linguistics.
 \url{https://doi.org/10.18653/v1/2025.wslp-main.11}.
+
+\bibitem{rei2020comet}
+Rei, R., Stewart, C., Farinha, A.\ C., \& Lavie, A.\ (2020).
+\emph{COMET: A Neural Framework for MT Evaluation}.
+\textit{Proceedings of EMNLP 2020}, pp.\ 2685--2702.
 
 \bibitem{papineni2002bleu}
 Papineni, K., Roukos, S., Ward, T., \& Zhu, W.-J.\ (2002).
