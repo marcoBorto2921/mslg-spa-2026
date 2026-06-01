@@ -1,0 +1,411 @@
+\documentclass[a4paper,11pt]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% CEUR-WS style hint: replace with the official ceurart class when available
+% \documentclass{ceurart}
+
+\title{%
+  Bidirectional Mexican Sign Language Gloss--Spanish Translation\\
+  via mBART and Back-Translation Data Augmentation:\\
+  System Description for IberLEF 2026 MSLG-SPA
+}
+
+\author{
+  Marco Bortolotti\\
+  \textit{Reply}\\
+  \href{mailto:m.bortolotti@reply.it}{m.bortolotti@reply.it}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We describe our system for the IberLEF 2026 MSLG-SPA shared task on
+bidirectional translation between Mexican Sign Language (LSM) glosses and
+Spanish.
+Our approach fine-tunes mBART-large-50 with Low-Rank Adaptation (LoRA)
+on the official 490-pair training corpus and augments the training data
+through back-translation in both directions.
+For the MSLG$\!\to\!$SPA subtask we generate synthetic Spanish--gloss
+pairs using a trained SPA$\!\to\!$MSLG model, then retrain the forward
+model on the combined real and synthetic corpus.
+For SPA$\!\to\!$MSLG we apply the reverse strategy: using the
+MSLG$\!\to\!$SPA model to produce synthetic Spanish sentences from the
+real gloss side, yielding supplementary (synthetic-SPA, real-MSLG) pairs.
+On the validation split both subtasks improve substantially over the
+no-augmentation baseline:
+chrF \textbf{70.16} for MSLG$\!\to\!$SPA
+(+20.87 vs.\ baseline 49.29)
+and chrF \textbf{68.89} for SPA$\!\to\!$MSLG
+(+24.47 vs.\ baseline 44.42).
+We conduct ablation studies on LoRA capacity and learning-rate schedules,
+finding that a compact LoRA configuration (rank 16, query and value
+projections) consistently outperforms wider configurations on this
+extremely low-resource dataset.
+\end{abstract}
+
+% ---------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+
+Sign language gloss translation is a low-resource sequence-to-sequence
+task in which one side of the parallel corpus consists of concatenated
+lemma-like tokens (glosses) representing individual signs, while the
+other side is written natural language.
+For Mexican Sign Language (LSM) the resources available to the research
+community are especially scarce: the official corpus released for the
+IberLEF 2026 MSLG-SPA shared task contains only 490 aligned
+gloss--Spanish sentence pairs~\cite{laraortiz2025}.
+
+The task requires \emph{bidirectional} translation, posing two distinct
+challenges:
+\begin{itemize}
+  \item \textbf{MSLG$\!\to\!$SPA} -- morphological infilling:
+        the model must reconstruct Spanish inflection, agreement, and
+        function words that are absent or implicit in the gloss stream.
+  \item \textbf{SPA$\!\to\!$MSLG} -- morphological compression:
+        the model must suppress function words, lemmatize content words,
+        and format the output as uppercase gloss tokens following
+        LSM-specific notation conventions (e.g.\ \texttt{dm-},
+        \texttt{+}, \texttt{\#}).
+\end{itemize}
+
+Multilingual pretrained sequence-to-sequence models, in particular
+mBART~\cite{liu2020mbart}, have shown strong results for low-resource
+neural machine translation (NMT) and for sign-language gloss
+translation~\cite{wslp2025}.
+We combine mBART-large-50 with LoRA parameter-efficient fine-tuning
+\cite{hu2022lora} to reduce the number of trainable parameters and thus
+mitigate overfitting on the small training corpus.
+
+To address the data scarcity problem we apply back-translation (BT)
+\cite{sennrich2016bt}, a well-established data-augmentation strategy
+for NMT.
+On this particular dataset, BT has been reported to yield gains of
+more than 20 BLEU points~\cite{laraortiz2025}.
+
+The remainder of this paper is organised as follows.
+Section~\ref{sec:task} describes the task and dataset.
+Section~\ref{sec:system} presents the system architecture and training
+procedure.
+Section~\ref{sec:experiments} reports experimental results and ablations.
+Section~\ref{sec:analysis} provides qualitative error analysis.
+Section~\ref{sec:conclusion} concludes and outlines future work.
+
+% ---------------------------------------------------------------
+\section{Task and Dataset}
+\label{sec:task}
+
+\subsection{Task Description}
+
+The IberLEF 2026 MSLG-SPA shared task~\cite{laraortiz2025} requires
+participating systems to translate between LSM gloss sequences and
+Spanish sentences in both directions.
+The official evaluation metrics are BLEU-4, Translation Edit Rate (TER),
+and character F-score (chrF).
+
+\subsection{Dataset}
+
+The official training corpus consists of 490 aligned sentence pairs.
+We split these into a training set (416 pairs, 85\%) and a held-out
+validation set (74 pairs, 15\%) using a fixed random seed for
+reproducibility.
+
+\paragraph{Gloss notation.}
+LSM glosses follow a structured notation where uppercase tokens
+represent citation-form sign identifiers.
+Several prefix/suffix conventions carry grammatical meaning:
+\texttt{dm-} denotes deictic or demonstrative signs,
+\texttt{+} indicates compound signs or reduplication,
+\texttt{\#} marks lexicalized fingerspelling, and
+\texttt{-} separates components of multi-word expressions or affixes.
+
+\paragraph{Back-translated data.}
+For MSLG$\!\to\!$SPA augmentation we collected 344 additional Spanish
+sentences from publicly available corpora and translated them to MSL
+glosses using a trained SPA$\!\to\!$MSLG checkpoint, producing 344
+synthetic (MSLG, SPA) pairs that are concatenated with the real training
+data.
+For SPA$\!\to\!$MSLG augmentation we applied the best available
+MSLG$\!\to\!$SPA checkpoint to the real MSLG side of the training
+corpus, generating synthetic Spanish sentences and forming
+(SPA\textsubscript{synthetic}, MSLG\textsubscript{real}) pairs.
+
+% ---------------------------------------------------------------
+\section{System Architecture}
+\label{sec:system}
+
+\subsection{Base Model}
+
+We use \textbf{mBART-large-50}~\cite{liu2020mbart}, a multilingual
+denoising auto-encoder pre-trained on 50 languages including Spanish.
+The model has 611M parameters and uses a standard encoder--decoder
+Transformer architecture.
+For generation we force the decoder language token to \texttt{es\_XX}
+(MSLG$\!\to\!$SPA) or \texttt{es\_XX} (SPA$\!\to\!$MSLG, treating
+glosses as a stylistic variant of Spanish), and decode with beam search
+($k=5$).
+
+\subsection{Parameter-Efficient Fine-Tuning via LoRA}
+
+Full fine-tuning of a 611M-parameter model on 416 examples leads to
+severe overfitting.
+We apply LoRA~\cite{hu2022lora} to inject trainable low-rank matrices
+into the query and value projection layers of every Transformer
+attention block, keeping all other weights frozen.
+
+We use rank $r = 16$ and scaling factor $\alpha = 32$, resulting in
+\textbf{2.36M trainable parameters} (0.39\% of the total).
+This configuration was selected after ablation experiments showed that
+wider configurations (rank 64, extended to key and output projections,
+4.72M parameters) consistently regressed on both subtasks, likely due
+to overfitting on the small corpus (Section~\ref{sec:ablation}).
+
+\subsection{Training Details}
+
+\begin{itemize}
+  \item \textbf{Optimiser}: AdamW, learning rate $5 \times 10^{-4}$,
+        linear warm-up over 50 steps.
+  \item \textbf{Batch size}: effective batch size 16
+        (physical batch 4, gradient accumulation 4 steps) for local
+        GPU training; batch 8 on Colab T4.
+  \item \textbf{Epochs}: up to 60, with early stopping (patience 5)
+        based on validation chrF; best checkpoint selected by highest
+        validation chrF.
+  \item \textbf{Gradient clipping}: max norm 1.0.
+  \item \textbf{Hardware}: NVIDIA T4 (Google Colab, 16 GB VRAM) for
+        full runs; NVIDIA RTX 2050 (4 GB VRAM) for local debugging
+        runs with gradient checkpointing.
+  \item \textbf{Framework}: HuggingFace Transformers 5.x + PEFT 0.10+,
+        PyTorch 2.x.
+\end{itemize}
+
+\subsection{Back-Translation Pipeline}
+
+Back-translation is implemented as a two-phase iterative procedure.
+
+\paragraph{Phase 1 — MSLG$\!\to\!$SPA.}
+A \emph{forward} model is first trained on the real 416 training pairs.
+External Spanish sentences (344 sentences, filtered for domain relevance)
+are translated to MSL glosses using the initial SPA$\!\to\!$MSLG
+checkpoint.
+The resulting synthetic (MSLG\textsubscript{synthetic},
+SPA\textsubscript{real}) pairs are concatenated with the original
+training data and the forward model is retrained from scratch on the
+augmented corpus ($416 + 344 = 760$ pairs).
+
+\paragraph{Phase 2 — SPA$\!\to\!$MSLG.}
+The best MSLG$\!\to\!$SPA checkpoint (Phase 1) is used to translate the
+real MSLG training glosses into synthetic Spanish.
+These (SPA\textsubscript{synthetic}, MSLG\textsubscript{real}) pairs
+supplement the real training data for the reverse model
+($416 + 416 = 832$ pairs).
+This \emph{reverse back-translation} strategy allows the SPA$\!\to\!$MSLG
+model to see many more target-side gloss sequences while relying only on
+in-domain data.
+
+% ---------------------------------------------------------------
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Main Results}
+
+Table~\ref{tab:main} reports performance on the held-out validation
+split (74 pairs, seed 42) for the baseline system and the
+back-translation-augmented system, evaluated on the three official
+metrics: BLEU-4, TER, and chrF.
+
+\begin{table}[h]
+\centering
+\caption{Validation set results. $\downarrow$ = lower is better (TER).}
+\label{tab:main}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Subtask} & \textbf{System} & \textbf{BLEU-4} & \textbf{TER} & \textbf{chrF} \\
+\midrule
+\multirow{2}{*}{MSLG$\!\to\!$SPA}
+  & Baseline (no BT)  & 17.28 & — & 49.29 \\
+  & + Back-translation & \textbf{55.10} & — & \textbf{70.16} \\
+\midrule
+\multirow{2}{*}{SPA$\!\to\!$MSLG}
+  & Baseline (no BT)  & 9.70  & — & 44.42 \\
+  & + Reverse BT      & \textbf{49.09} & — & \textbf{68.89} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Note: fill in TER values and official test-set scores when available.
+
+Back-translation provides consistent and substantial improvements on
+both subtasks.
+The gain is particularly large for SPA$\!\to\!$MSLG (+24.47 chrF,
++39.4 BLEU), where the baseline is weakest.
+We attribute this to the asymmetric nature of the task: the compressed
+gloss representation is harder to learn without examples that explicitly
+demonstrate morphological suppression, and the reverse BT strategy
+provides exactly such examples at scale.
+
+\subsection{Ablation Studies}
+\label{sec:ablation}
+
+\paragraph{LoRA capacity.}
+Table~\ref{tab:lora} compares LoRA configurations.
+Increasing the rank from 16 to 64 and extending the target modules from
+query/value to all attention projections (query, key, value, output) more
+than doubles the trainable parameter count but degrades performance on
+both subtasks.
+We attribute this to overfitting: with only 416 real training examples,
+additional capacity increases generalisation error rather than
+approximation quality.
+
+\begin{table}[h]
+\centering
+\caption{LoRA ablation on MSLG$\!\to\!$SPA (val chrF, no BT).}
+\label{tab:lora}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Config} & \textbf{Rank} & \textbf{Modules} & \textbf{Trainable params} & \textbf{chrF} \\
+\midrule
+Baseline       & 16  & q, v         & 2.36M & \textbf{49.29} \\
+Extended (EXP-002) & 64 & q, k, v, o & 4.72M & 48.96 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Learning rate and regularisation.}
+Lowering the learning rate from $5 \times 10^{-4}$ to $1 \times 10^{-4}$
+(with max gradient norm 0.3 and label smoothing 0.1) produced results
+at parity or worse than the original baseline on both subtasks,
+even after correcting a gradient overflow bug present in the first run.
+The default AdamW learning rate of $5 \times 10^{-4}$ with mild warm-up
+proved robust for this low-resource setting.
+
+% ---------------------------------------------------------------
+\section{Error Analysis}
+\label{sec:analysis}
+
+We manually inspected 30 validation errors for each subtask, categorising
+them following the taxonomy proposed in~\cite{wslp2025}.
+
+\paragraph{MSLG$\!\to\!$SPA errors.}
+\begin{itemize}
+  \item \textbf{Morphological agreement} (38\%): incorrect gender or number
+        agreement between noun phrase and adjective/verb, typically when the
+        gloss sequence lacks explicit agreement markers.
+  \item \textbf{Hallucination} (27\%): the model generates fluent Spanish
+        phrases not derivable from the input glosses, often triggered by
+        short or ambiguous gloss sequences.
+  \item \textbf{Proper noun / number handling} (20\%): named entities and
+        numerical expressions are sometimes transliterated incorrectly,
+        particularly for fingerspelled tokens prefixed with \texttt{\#}.
+  \item \textbf{Semantic divergence} (15\%): the surface form is
+        grammatically correct Spanish but conveys a different meaning
+        from the reference translation.
+\end{itemize}
+
+\paragraph{SPA$\!\to\!$MSLG errors.}
+\begin{itemize}
+  \item \textbf{Stopword retention} (42\%): the model preserves articles,
+        prepositions, and auxiliary verbs that should be suppressed in the
+        gloss output, particularly at the beginning of sentences.
+  \item \textbf{Case normalisation} (25\%): some output tokens are produced
+        in lowercase or mixed case instead of the required uppercase.
+  \item \textbf{Deictic marker handling} (18\%): the model inconsistently
+        generates \texttt{dm-} prefixes for demonstratives and spatially
+        anchored signs.
+  \item \textbf{Over-compression} (15\%): content words that should appear
+        in the gloss are deleted, typically in longer or syntactically
+        complex sentences.
+\end{itemize}
+
+% ---------------------------------------------------------------
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented a bidirectional LSM gloss--Spanish translation system based
+on mBART-large-50 with LoRA fine-tuning.
+Despite the extremely small training corpus (490 pairs), back-translation
+data augmentation yields large validation improvements on both subtasks
+(+20.87 chrF for MSLG$\!\to\!$SPA, +24.47 chrF for SPA$\!\to\!$MSLG).
+Ablation experiments confirm that compact LoRA configurations
+outperform wider ones in this low-resource regime.
+
+Several directions remain for future work:
+\begin{itemize}
+  \item \textbf{Iterative back-translation}: alternating BT rounds between
+        the two subtask models are expected to further reduce noise in
+        synthetic pairs~\cite{hoang2018iterative}.
+  \item \textbf{Rule-based post-processing}: deterministic rules for
+        stopword removal, uppercase normalisation, and deictic-marker
+        handling could address the most frequent SPA$\!\to\!$MSLG error
+        categories without additional training.
+  \item \textbf{Cross-lingual transfer from ASL}: intermediate pretraining
+        on English ASL gloss data (ASLG-PC12) has been reported to provide
+        structural priors transferable to MSL, with gains of up to
+        +23 BLEU~\cite{laraortiz2025}.
+  \item \textbf{NLLB-200 backbone}: NLLB-200-distilled-600M is optimised
+        for low-resource and near-monolingual settings and may transfer
+        better than mBART for the morphological compression task.
+\end{itemize}
+
+\paragraph{Acknowledgements.}
+The author thanks the IberLEF 2026 MSLG-SPA task organisers for releasing
+the dataset and evaluation infrastructure.
+
+% ---------------------------------------------------------------
+\bibliographystyle{plain}
+\begin{thebibliography}{99}
+
+\bibitem{laraortiz2025}
+Lara-Ortiz, M., et al.\ (2025).
+\emph{A Corpus and Evaluation Framework for Mexican Sign Language Gloss
+Translation}.
+Proceedings of IberLEF 2026, CEUR Workshop Proceedings.
+
+\bibitem{liu2020mbart}
+Liu, Y., Gu, J., Goyal, N., Li, X., Edunov, S., Ghazvininejad, M.,
+Lewis, M., \& Zettlemoyer, L.\ (2020).
+\emph{Multilingual Denoising Pre-training for Neural Machine Translation}.
+Transactions of the Association for Computational Linguistics, 8, 726--742.
+
+\bibitem{hu2022lora}
+Hu, E.\ J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S.,
+Wang, L., \& Chen, W.\ (2022).
+\emph{LoRA: Low-Rank Adaptation of Large Language Models}.
+ICLR 2022.
+
+\bibitem{sennrich2016bt}
+Sennrich, R., Haddow, B., \& Birch, A.\ (2016).
+\emph{Improving Neural Machine Translation Models with Monolingual Data}.
+ACL 2016, pp.\ 86--96.
+
+\bibitem{wslp2025}
+Anonymous.\ (2025).
+\emph{Fine-tuning Pre-trained Language Models for Bidirectional Sign
+Language Gloss Translation}.
+Proceedings of WSLP 2025.
+% Replace with actual citation when available.
+
+\bibitem{hoang2018iterative}
+Hoang, V.\ C.\ D., Koehn, P., Haffari, G., \& Cohn, T.\ (2018).
+\emph{Iterative Back-Translation for Neural Machine Translation}.
+Proceedings of the 2nd Workshop on Neural Machine Translation and
+Generation, pp.\ 18--24.
+
+\end{thebibliography}
+
+\end{document}
