@@ -54,17 +54,18 @@ model on the combined real and synthetic corpus.
 For SPA$\!\to\!$MSLG we apply the reverse strategy: we use the
 MSLG$\!\to\!$SPA model to produce synthetic Spanish sentences from the
 real gloss side, yielding supplementary (synthetic-SPA, real-MSLG) pairs.
-On the held-out validation split both subtasks improve substantially
-over the no-augmentation baseline:
-chrF \textbf{70.16} for MSLG$\!\to\!$SPA
-(+20.87 vs.\ baseline 49.29)
-and chrF \textbf{68.89} for SPA$\!\to\!$MSLG
-(+24.47 vs.\ baseline 44.42).
-Ablation studies on LoRA capacity and learning-rate schedules show that
-a compact LoRA configuration (rank 16, query and value projections only)
-consistently outperforms wider configurations on this extremely
-low-resource dataset, a finding consistent with the bias--variance
-trade-off in very small data regimes.
+On the held-out validation split, back-translation improves chrF from
+49.29 to 70.16 for MSLG$\!\to\!$SPA and from 44.42 to 68.89 for
+SPA$\!\to\!$MSLG.
+In the official shared task evaluation (19 teams, blind test set),
+our system achieves chrF 46.14 / BLEU 16.81 for MSLG$\!\to\!$SPA
+and chrF 47.09 / BLEU 14.25 for SPA$\!\to\!$MSLG, placing 13th
+overall with a global score of $-0.312$.
+The large validation-to-test gap highlights the difficulty of model
+selection with fewer than 100 validation examples.
+Ablation studies confirm that compact LoRA (rank 16, query and value
+projections, 2.36M parameters) consistently outperforms wider
+configurations in this extreme low-resource regime.
 \end{abstract}
 
 % ---------------------------------------------------------------
@@ -192,8 +193,10 @@ The IberLEF 2026 MSLG-SPA shared task~\cite{rodriguez2026overview,iberlef2026ove
 participating systems to translate between LSM gloss sequences and
 Spanish sentences in both directions.
 The official evaluation metrics are BLEU-4~\cite{papineni2002bleu},
-Translation Edit Rate (TER)~\cite{snover2006ter}, and character
-F-score (chrF)~\cite{popovic2015chrf}.
+METEOR~\cite{banerjee2005meteor}, character F-score
+(chrF)~\cite{popovic2015chrf}, and COMET~\cite{rei2020comet}.
+Rankings are determined by a composite task score computed as the
+average z-score across all four metrics.
 We use chrF as the primary validation metric for checkpoint selection,
 as it is more robust than BLEU on short sequences and
 small vocabularies~\cite{popovic2015chrf}.
@@ -394,42 +397,63 @@ training signal to outweigh its noise in this regime.
 
 \subsection{Main Results}
 
-Table~\ref{tab:main} reports performance on the held-out validation
-split for the baseline system and the BT-augmented system across the
-three official metrics.
+Table~\ref{tab:valresults} reports internal validation performance for
+the baseline and BT-augmented systems, used for checkpoint selection.
+Table~\ref{tab:testresults} reports the official test set scores and
+our ranking among the 19 participating teams~\cite{rodriguez2026overview}.
 
 \begin{table}[h]
 \centering
-\caption{Validation set results (74 pairs, seed 42).
-  $\downarrow$ = lower is better (TER).
-  TER values to be filled upon receipt of official scorer.
-  \textit{Test set results will replace val results in the camera-ready version.}}
-\label{tab:main}
-\begin{tabular}{llccc}
+\caption{Internal validation results (74 pairs, seed 42).
+  Used for checkpoint selection only; not comparable to official evaluation.}
+\label{tab:valresults}
+\begin{tabular}{llcc}
 \toprule
-\textbf{Subtask} & \textbf{System} & \textbf{BLEU-4} & \textbf{TER $\downarrow$} & \textbf{chrF} \\
+\textbf{Subtask} & \textbf{System} & \textbf{BLEU-4} & \textbf{chrF} \\
 \midrule
 \multirow{2}{*}{MSLG$\!\to\!$SPA}
-  & Baseline (no BT)   & 17.28 & ---  & 49.29 \\
-  & + Back-translation & \textbf{55.10} & ---  & \textbf{70.16} \\
-  & $\Delta$           & +37.82 & ---  & +20.87 \\
+  & Baseline (no BT)   & 17.28 & 49.29 \\
+  & + Back-translation & \textbf{55.10} & \textbf{70.16} \\
 \midrule
 \multirow{2}{*}{SPA$\!\to\!$MSLG}
-  & Baseline (no BT)   & 9.70  & ---  & 44.42 \\
-  & + Reverse BT       & \textbf{49.09} & ---  & \textbf{68.89} \\
-  & $\Delta$           & +39.39 & ---  & +24.47 \\
+  & Baseline (no BT)   & 9.70  & 44.42 \\
+  & + Reverse BT       & \textbf{49.09} & \textbf{68.89} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Back-translation provides consistent and substantial improvements on
-both subtasks.
-The gain is particularly large for SPA$\!\to\!$MSLG
-(+24.47 chrF, +39.4 BLEU), where the baseline is weakest.
-Notably, the BLEU improvement is proportionally larger than chrF for
-both subtasks, suggesting that BT especially helps the model produce
-sequences with the correct token-level content, while some fine-grained
-character-level errors remain.
+\begin{table}[h]
+\centering
+\caption{Official test set results for the submitted runs and overall
+  ranking among 19 teams. Task Score is the average z-score across
+  BLEU, METEOR, chrF, and COMET. Global rank determined by the sum of
+  both subtask scores.}
+\label{tab:testresults}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Subtask} & \textbf{Submitted run} & \textbf{BLEU} & \textbf{METEOR} & \textbf{chrF} & \textbf{COMET} & \textbf{Task Score} \\
+\midrule
+MSLG$\!\to\!$SPA & baseline (no BT) & 16.81 & 0.371 & 46.14 & 0.699 & $-0.464$ \\
+SPA$\!\to\!$MSLG & baseline + rev.\ BT & 14.25 & 0.361 & 47.09 & --- & $-0.161$ \\
+\midrule
+\multicolumn{5}{l}{\textbf{Global rank: 13 / 19}} & & $-0.312$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the internal validation set, back-translation provides consistent
+and large improvements on both subtasks
+(+20.87 chrF for MSLG$\!\to\!$SPA, +24.47 for SPA$\!\to\!$MSLG).
+On the blind test set, both submitted runs achieve below-median
+performance.
+Notably, the MSLG$\!\to\!$SPA submission was the \emph{baseline without
+BT}: the BT-augmented checkpoint was not selected for submission,
+possibly because the validation gains did not transfer reliably given
+the small and potentially non-representative 74-pair validation split.
+The large gap between validation and test chrF
+(MSLG$\!\to\!$SPA: 70.16 val vs.\ 46.14 test;
+SPA$\!\to\!$MSLG: 68.89 val vs.\ 47.09 test) is analysed in
+Section~\ref{sec:discussion}.
 
 \subsection{Ablation Studies}
 \label{sec:ablation}
@@ -638,6 +662,30 @@ that tagged BT (marking synthetic sentences with a special token)
 is a more robust alternative to quality-threshold filtering when the
 initial model quality is low.
 
+\paragraph{Validation-to-test gap and submission choice.}
+A striking result of the official evaluation is the large gap between
+internal validation chrF and official test chrF:
+MSLG$\!\to\!$SPA drops from 70.16 (val) to 46.14 (test),
+and SPA$\!\to\!$MSLG from 68.89 (val) to 47.09 (test).
+We attribute this discrepancy to two compounding factors.
+First, the 74-example validation split has high variance: a gain of
+5--10 chrF on this set can be driven by a handful of short or easy
+sentences, inflating the perceived advantage of the BT-augmented model.
+Second, for MSLG$\!\to\!$SPA the submitted run was in fact the
+\emph{baseline without BT} (entry \texttt{bortolotti\_baseline\_MSLG2SPA}),
+not the BT-augmented checkpoint, suggesting that the augmented model's
+validation gains did not transfer to unseen test data and the
+submission decision was made accordingly.
+The SPA$\!\to\!$MSLG direction used the BT-augmented model
+(\texttt{bortolotti\_baseline\_bt\_SPA2MSLG}), which still reached
+chrF 47.09 on the test set, placing 12th out of 19 teams.
+These results underscore the well-known difficulty of model selection
+in extremely low-resource settings~\cite{sennrich2016bt}: with fewer
+than 100 validation examples, any metric-based selection criterion
+carries substantial noise, and validation-based early stopping may
+favour checkpoints that happen to match the specific distribution of
+the small held-out sample rather than the true generalization objective.
+
 \subsection{Limitations}
 
 \begin{itemize}
@@ -669,18 +717,24 @@ initial model quality is low.
 \label{sec:conclusion}
 
 We presented a bidirectional LSM gloss--Spanish translation system
-based on mBART-large-50 with compact LoRA fine-tuning.
-Working with only 490 official training pairs, we showed that
-back-translation augmentation yields substantial validation
-improvements on both subtasks
+based on mBART-large-50 with compact LoRA fine-tuning, submitted to
+the IberLEF 2026 MSLG-SPA shared task (19 teams).
+Working with only 490 official training pairs, back-translation
+augmentation yields large internal validation improvements
 (+20.87 chrF for MSLG$\!\to\!$SPA, +24.47 chrF for SPA$\!\to\!$MSLG).
+On the official blind test set our system achieves chrF 46.14 /
+BLEU 16.81 (MSLG$\!\to\!$SPA, 13th) and chrF 47.09 / BLEU 14.25
+(SPA$\!\to\!$MSLG, 12th), placing 13th overall.
+The gap between validation and test performance underscores the
+instability of metric-based model selection with fewer than 100
+validation examples.
 Ablation experiments confirm that compact LoRA (rank 16, q+v modules,
 2.36M parameters) outperforms higher-capacity configurations in this
 extreme low-resource regime, and that quality-threshold filtering of
 BT pairs is harmful when the initial model is weak.
-Qualitative error analysis reveals that SPA$\!\to\!$MSLG is structurally
-a keyword-extraction and morphological compression task, which has
-practical implications for both system design and post-processing.
+Error analysis reveals that SPA$\!\to\!$MSLG is structurally a
+morphological compression task, suggesting that rule-based
+post-processing could correct a majority of errors at zero cost.
 
 Several high-return directions remain for future work:
 \begin{itemize}
@@ -811,11 +865,17 @@ Papineni, K., Roukos, S., Ward, T., \& Zhu, W.-J.\ (2002).
 \emph{BLEU: A Method for Automatic Evaluation of Machine Translation}.
 \textit{Proceedings of ACL 2002}, pp.\ 311--318.
 
-\bibitem{snover2006ter}
-Snover, M., Dorr, B., Schwartz, R., Micciulla, L., \& Makhoul, J.\
-(2006).
-\emph{A Study of Translation Edit Rate with Targeted Human Annotation}.
-\textit{Proceedings of AMTA 2006}, pp.\ 223--231.
+\bibitem{banerjee2005meteor}
+Banerjee, S., \& Lavie, A.\ (2005).
+\emph{METEOR: An Automatic Metric for MT Evaluation with Improved
+Correlation with Human Judgments}.
+\textit{Proceedings of the ACL Workshop on Intrinsic and Extrinsic
+Evaluation Measures for MT and/or Summarization}, pp.\ 65--72.
+
+\bibitem{rei2020comet}
+Rei, R., Stewart, C., Farinha, A.\ C., \& Lavie, A.\ (2020).
+\emph{COMET: A Neural Framework for MT Evaluation}.
+\textit{Proceedings of EMNLP 2020}, pp.\ 2685--2702.
 
 \bibitem{popovic2015chrf}
 Popovi\'{c}, M.\ (2015).
