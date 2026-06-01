@@ -193,10 +193,10 @@ The IberLEF 2026 MSLG-SPA shared task~\cite{rodriguez2026overview,iberlef2026ove
 participating systems to translate between LSM gloss sequences and
 Spanish sentences in both directions.
 The official evaluation metrics are BLEU-4~\cite{papineni2002bleu},
-METEOR~\cite{banerjee2005meteor}, character F-score
-(chrF)~\cite{popovic2015chrf}, and COMET~\cite{rei2020comet}.
+METEOR~\cite{banerjee2005meteor}, and character F-score
+(chrF)~\cite{popovic2015chrf}.
 Rankings are determined by a composite task score computed as the
-average z-score across all four metrics.
+average z-score across all three metrics.
 We use chrF as the primary validation metric for checkpoint selection,
 as it is more robust than BLEU on short sequences and
 small vocabularies~\cite{popovic2015chrf}.
@@ -426,17 +426,17 @@ our ranking among the 19 participating teams~\cite{rodriguez2026overview}.
 \centering
 \caption{Official test set results for the submitted runs and overall
   ranking among 19 teams. Task Score is the average z-score across
-  BLEU, METEOR, chrF, and COMET. Global rank determined by the sum of
+  BLEU, METEOR, and chrF. Global rank determined by the sum of
   both subtask scores.}
 \label{tab:testresults}
-\begin{tabular}{lcccccc}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Subtask} & \textbf{Submitted run} & \textbf{BLEU} & \textbf{METEOR} & \textbf{chrF} & \textbf{COMET} & \textbf{Task Score} \\
+\textbf{Subtask} & \textbf{Submitted run} & \textbf{BLEU} & \textbf{METEOR} & \textbf{chrF} & \textbf{Task Score} \\
 \midrule
-MSLG$\!\to\!$SPA & baseline (no BT) & 16.81 & 0.371 & 46.14 & 0.699 & $-0.464$ \\
-SPA$\!\to\!$MSLG & baseline + rev.\ BT & 14.25 & 0.361 & 47.09 & --- & $-0.161$ \\
+MSLG$\!\to\!$SPA & baseline (no BT) & 16.81 & 0.371 & 46.14 & $-0.464$ \\
+SPA$\!\to\!$MSLG & baseline + rev.\ BT & 14.25 & 0.361 & 47.09 & $-0.161$ \\
 \midrule
-\multicolumn{5}{l}{\textbf{Global rank: 13 / 19}} & & $-0.312$ \\
+\multicolumn{4}{l}{\textbf{Global rank: 13 / 19}} & & $-0.312$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -881,11 +881,6 @@ Banerjee, S., \& Lavie, A.\ (2005).
 Correlation with Human Judgments}.
 \textit{Proceedings of the ACL Workshop on Intrinsic and Extrinsic
 Evaluation Measures for MT and/or Summarization}, pp.\ 65--72.
-
-\bibitem{rei2020comet}
-Rei, R., Stewart, C., Farinha, A.\ C., \& Lavie, A.\ (2020).
-\emph{COMET: A Neural Framework for MT Evaluation}.
-\textit{Proceedings of EMNLP 2020}, pp.\ 2685--2702.
 
 \bibitem{popovic2015chrf}
 Popovi\'{c}, M.\ (2015).
