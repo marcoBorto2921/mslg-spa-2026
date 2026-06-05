@@ -33,9 +33,11 @@
 
 %% Full name + full affiliation + country required by CEUR
 \author[1]{Marco Bortolotti}[%
+correspmark=1,
 orcid=0009-0002-8188-919X,
 email=marcoborto21@gmail.com]
-\address[1]{Reply, Italy}
+\address[1]{Independent Researcher, Ferrara, Italy}
+\cortext[1]{Corresponding author.}
 
 \maketitle
 
@@ -68,6 +70,10 @@ We use compact LoRA (rank 16, query and value projections, 2.36M
 parameters), consistent with the literature recommendation for
 low-resource fine-tuning.
 \end{abstract}
+
+\begin{keywords}
+Mexican Sign Language \sep back-translation \sep mBART \sep low-resource machine translation \sep LoRA \sep sequence-to-sequence translation
+\end{keywords}
 
 % ---------------------------------------------------------------
 \section{Introduction}
@@ -766,6 +772,8 @@ Several high-return directions remain for future work:
 \paragraph{Acknowledgements.}
 The author thanks the IberLEF 2026 MSLG-SPA task organisers for
 releasing the dataset and evaluation infrastructure.
+The source code for this work is publicly available at
+\url{https://github.com/marcoBorto2921/mslg-spa-2026}.
 
 % ---------------------------------------------------------------
 \section*{Declaration on Generative AI}
@@ -777,122 +785,122 @@ After using these tools, the author reviewed and edited the content as
 needed and takes full responsibility for the content of this publication.
 
 % ---------------------------------------------------------------
+%% References ordered by first appearance in text (IEEE style)
 \begin{thebibliography}{99}
 
 \bibitem{rodriguez2026overview}
-Rodr\'{\i}guez-Gonz\'alez, A.\ Y., Fajardo-Delgado, D.,
-\'Alvarez-Carmona, M.\ \'A., S\'anchez-Cervantes, M.\ G.,
-D\'{\i}az-Pacheco, \'A., Aranda, R., Fajardo-Flores, S., \&
-Mart\'{\i}nez-Rodr\'{\i}guez, C.\ H.\ (2026).
-\emph{Overview of MSLG-SPA at IberLEF 2026: Bidirectional Translation
-between Mexican Sign Language Glosses and Spanish}.
-\textit{Procesamiento del Lenguaje Natural}, 77.
-
-\bibitem{iberlef2026overview}
-Bonet-Jover, A., Gonz\'alez-Barba, J.\ \'A., \& Chiruzzo, L.\ (2026).
-\emph{Overview of IberLEF 2026: Natural Language Processing Challenges
-for Spanish and other Iberian Languages}.
-In \textit{Proceedings of the Iberian Languages Evaluation Forum
-(IberLEF 2026), co-located with the 42nd Conference of the Spanish
-Society for Natural Language Processing (SEPLN 2026)}, CEUR-WS.org.
-
-\bibitem{liu2020mbart}
-Liu, Y., Gu, J., Goyal, N., Li, X., Edunov, S., Ghazvininejad, M.,
-Lewis, M., \& Zettlemoyer, L.\ (2020).
-\emph{Multilingual Denoising Pre-training for Neural Machine Translation}.
-\textit{Transactions of the Association for Computational Linguistics},
-8, 726--742.
-
-\bibitem{tang2020mbart50}
-Tang, Y., Tran, C., Li, X., Chen, P.-J., Goyal, N., Chaudhary, V.,
-Gu, J., \& Fan, A.\ (2021).
-\emph{Multilingual Translation from Denoising Pre-Training}.
-\textit{Findings of ACL-IJCNLP 2021}, pp.\ 726--742.
-
-\bibitem{hu2022lora}
-Hu, E.\ J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S.,
-Wang, L., \& Chen, W.\ (2022).
-\emph{LoRA: Low-Rank Adaptation of Large Language Models}.
-\textit{ICLR 2022}.
-
-\bibitem{mangrulkar2022peft}
-Mangrulkar, S., Gugger, S., Debut, L., Belkada, Y., Paul, S., \&
-Bossan, B.\ (2022).
-\emph{PEFT: State-of-the-art Parameter-Efficient Fine-Tuning methods}.
-\url{https://github.com/huggingface/peft}.
+A.\ Y. Rodr\'{\i}guez-Gonz\'alez, D. Fajardo-Delgado,
+M.\ \'A. \'Alvarez-Carmona, M.\ G. S\'anchez-Cervantes,
+\'A. D\'{\i}az-Pacheco, R. Aranda, S. Fajardo-Flores, and
+C.\ H. Mart\'{\i}nez-Rodr\'{\i}guez,
+``Overview of MSLG-SPA at IberLEF 2026: Bidirectional Translation
+between Mexican Sign Language Glosses and Spanish,''
+\textit{Procesamiento del Lenguaje Natural}, vol.~77, 2026.
 
 \bibitem{sennrich2016bt}
-Sennrich, R., Haddow, B., \& Birch, A.\ (2016).
-\emph{Improving Neural Machine Translation Models with Monolingual Data}.
-\textit{Proceedings of ACL 2016}, pp.\ 86--96.
+R. Sennrich, B. Haddow, and A. Birch,
+``Improving Neural Machine Translation Models with Monolingual Data,''
+in \textit{Proc.\ 54th Annual Meeting of the ACL},
+Berlin, Germany, 2016, pp.~86--96.
 
-\bibitem{edunov2018bt}
-Edunov, S., Ott, M., Auli, M., \& Grangier, D.\ (2018).
-\emph{Understanding Back-Translation at Scale}.
-\textit{Proceedings of EMNLP 2018}, pp.\ 489--500.
+\bibitem{hu2022lora}
+E.\ J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang,
+L. Wang, and W. Chen,
+``LoRA: Low-Rank Adaptation of Large Language Models,''
+in \textit{Proc.\ ICLR 2022}, 2022.
 
-\bibitem{hoang2018iterative}
-Hoang, V.\ C.\ D., Koehn, P., Haffari, G., \& Cohn, T.\ (2018).
-\emph{Iterative Back-Translation for Neural Machine Translation}.
-\textit{Proceedings of the 2nd Workshop on Neural Machine Translation
-and Generation}, pp.\ 18--24.
+\bibitem{mangrulkar2022peft}
+S. Mangrulkar, S. Gugger, L. Debut, Y. Belkada, S. Paul, and B. Bossan,
+``PEFT: State-of-the-art Parameter-Efficient Fine-Tuning methods,''
+2022. [Online]. Available: \url{https://github.com/huggingface/peft}
 
-\bibitem{caswell2019tagged}
-Caswell, I., Chelba, C., \& Grangier, D.\ (2019).
-\emph{Tagged Back-Translation}.
-\textit{Proceedings of the 4th Conference on Machine Translation
-(WMT19)}, pp.\ 53--63.
+\bibitem{tang2020mbart50}
+Y. Tang, C. Tran, X. Li, P.-J. Chen, N. Goyal, V. Chaudhary, J. Gu,
+and A. Fan,
+``Multilingual Translation from Denoising Pre-Training,''
+in \textit{Findings of ACL-IJCNLP 2021}, 2021, pp.~726--742.
 
 \bibitem{camgoz2020sign2text}
-Camg\"{o}z, N.\ C., Hadfield, S., Koller, O., Ney, H., \&
-Bowden, R.\ (2020).
-\emph{Sign Language Transformers: Joint End-to-End Sign Language
-Recognition and Translation}.
-\textit{Proceedings of CVPR 2020}, pp.\ 10023--10033.
+N.\ C. Camg\"{o}z, S. Hadfield, O. Koller, H. Ney, and R. Bowden,
+``Sign Language Transformers: Joint End-to-End Sign Language
+Recognition and Translation,''
+in \textit{Proc.\ CVPR 2020}, Seattle, WA, USA, 2020,
+pp.~10023--10033.
 
 \bibitem{decoster2021frozen}
-De Coster, M., Van Herreweghe, M., \& Dambre, J.\ (2021).
-\emph{Frozen Pretrained Transformers for Neural Sign Language Translation}.
-\textit{Proceedings of the 1st International Workshop on Automatic
-Translation for Signed and Spoken Languages}, pp.\ 1--6.
+M. De Coster, M. Van Herreweghe, and J. Dambre,
+``Frozen Pretrained Transformers for Neural Sign Language Translation,''
+in \textit{Proc.\ 1st Int.\ Workshop on Automatic Translation for
+Signed and Spoken Languages}, 2021, pp.~1--6.
 
 \bibitem{wslp2025}
-Kermani, A., Irani, H., \& Metsis, V.\ (2025).
-\emph{Finetuning Pre-trained Language Models for Bidirectional Sign
-Language Gloss to Text Translation}.
-In \textit{Proceedings of the Workshop on Sign Language Processing
-(WSLP)}, IIT Bombay, Mumbai, India, pp.\ 73--81.
-Association for Computational Linguistics.
-\url{https://doi.org/10.18653/v1/2025.wslp-main.11}.
+A. Kermani, H. Irani, and V. Metsis,
+``Finetuning Pre-trained Language Models for Bidirectional Sign
+Language Gloss to Text Translation,''
+in \textit{Proc.\ Workshop on Sign Language Processing (WSLP)},
+Mumbai, India, 2025, pp.~73--81.
+\url{https://doi.org/10.18653/v1/2025.wslp-main.11}
 
-\bibitem{papineni2002bleu}
-Papineni, K., Roukos, S., Ward, T., \& Zhu, W.-J.\ (2002).
-\emph{BLEU: A Method for Automatic Evaluation of Machine Translation}.
-\textit{Proceedings of ACL 2002}, pp.\ 311--318.
+\bibitem{edunov2018bt}
+S. Edunov, M. Ott, M. Auli, and D. Grangier,
+``Understanding Back-Translation at Scale,''
+in \textit{Proc.\ EMNLP 2018}, Brussels, Belgium, 2018, pp.~489--500.
 
-\bibitem{banerjee2005meteor}
-Banerjee, S., \& Lavie, A.\ (2005).
-\emph{METEOR: An Automatic Metric for MT Evaluation with Improved
-Correlation with Human Judgments}.
-\textit{Proceedings of the ACL Workshop on Intrinsic and Extrinsic
-Evaluation Measures for MT and/or Summarization}, pp.\ 65--72.
+\bibitem{hoang2018iterative}
+V.\ C.\ D. Hoang, P. Koehn, G. Haffari, and T. Cohn,
+``Iterative Back-Translation for Neural Machine Translation,''
+in \textit{Proc.\ 2nd Workshop on Neural Machine Translation
+and Generation}, Melbourne, Australia, 2018, pp.~18--24.
 
-\bibitem{popovic2015chrf}
-Popovi\'{c}, M.\ (2015).
-\emph{chrF: character n-gram F-score for Automatic MT Evaluation}.
-\textit{Proceedings of the 10th Workshop on Statistical Machine
-Translation}, pp.\ 392--395.
+\bibitem{caswell2019tagged}
+I. Caswell, C. Chelba, and D. Grangier,
+``Tagged Back-Translation,''
+in \textit{Proc.\ 4th Conf.\ on Machine Translation (WMT19)},
+Florence, Italy, 2019, pp.~53--63.
 
 \bibitem{houlsby2019adapters}
-Houlsby, N., Giurgiu, A., Jastrzebski, S., Morrone, B.,
-de Laroussilhe, Q., Gesmundo, A., Attariyan, M., \& Gelly, S.\ (2019).
-\emph{Parameter-Efficient Transfer Learning for NLP}.
-\textit{Proceedings of ICML 2019}, pp.\ 2790--2799.
+N. Houlsby, A. Giurgiu, S. Jastrzebski, B. Morrone,
+Q. de Laroussilhe, A. Gesmundo, M. Attariyan, and S. Gelly,
+``Parameter-Efficient Transfer Learning for NLP,''
+in \textit{Proc.\ ICML 2019}, Long Beach, CA, USA, 2019,
+pp.~2790--2799.
 
 \bibitem{li2021prefix}
-Li, X.\ L., \& Liang, P.\ (2021).
-\emph{Prefix-Tuning: Optimizing Continuous Prompts for Generation}.
-\textit{Proceedings of ACL-IJCNLP 2021}, pp.\ 4582--4597.
+X.\ L. Li and P. Liang,
+``Prefix-Tuning: Optimizing Continuous Prompts for Generation,''
+in \textit{Proc.\ ACL-IJCNLP 2021}, 2021, pp.~4582--4597.
+
+\bibitem{iberlef2026overview}
+A. Bonet-Jover, J.\ \'A. Gonz\'alez-Barba, and L. Chiruzzo,
+``Overview of IberLEF 2026: Natural Language Processing Challenges
+for Spanish and other Iberian Languages,''
+in \textit{Proc.\ IberLEF 2026 (co-located with SEPLN 2026)},
+CEUR-WS.org, 2026.
+
+\bibitem{papineni2002bleu}
+K. Papineni, S. Roukos, T. Ward, and W.-J. Zhu,
+``BLEU: A Method for Automatic Evaluation of Machine Translation,''
+in \textit{Proc.\ 40th Annual Meeting of the ACL},
+Philadelphia, PA, USA, 2002, pp.~311--318.
+
+\bibitem{banerjee2005meteor}
+S. Banerjee and A. Lavie,
+``METEOR: An Automatic Metric for MT Evaluation with Improved
+Correlation with Human Judgments,''
+in \textit{Proc.\ ACL Workshop on Intrinsic and Extrinsic Evaluation
+Measures for MT}, Ann Arbor, MI, USA, 2005, pp.~65--72.
+
+\bibitem{popovic2015chrf}
+M. Popovi\'{c},
+``chrF: character n-gram F-score for Automatic MT Evaluation,''
+in \textit{Proc.\ 10th Workshop on Statistical Machine Translation},
+Lisbon, Portugal, 2015, pp.~392--395.
+
+\bibitem{liu2020mbart}
+Y. Liu, J. Gu, N. Goyal, X. Li, S. Edunov, M. Ghazvininejad,
+M. Lewis, and L. Zettlemoyer,
+``Multilingual Denoising Pre-training for Neural Machine Translation,''
+\textit{Trans.\ of the ACL}, vol.~8, pp.~726--742, 2020.
 
 \end{thebibliography}
 
