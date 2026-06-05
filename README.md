@@ -119,7 +119,8 @@ mslg-spa-2026/
 │   └── colab_training.ipynb    # End-to-end Colab training notebook
 ├── paper/
 │   ├── mslg_spa_2026_working_notes.tex   # IberLEF 2026 working notes (LaTeX)
-│   └── mslg_spa_2026.pdf                 # Compiled PDF
+│   ├── mslg_spa_2026.pdf                 # Compiled PDF
+│   └── review/                           # Reviewer reports (camera-ready revision)
 ├── results/                    # Official submission files (.txt)
 ├── scripts/
 │   ├── train.py                # Training entry point
